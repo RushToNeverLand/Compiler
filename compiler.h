@@ -1,4 +1,3 @@
-#pragma once
 // 入门提示: 
 //   1. 使用解决方案资源管理器窗口添加/管理文件
 //   2. 使用团队资源管理器窗口连接到源代码管理
@@ -30,7 +29,7 @@
 #define levmax 1      /* 最大允许过程嵌套声明层数*/
 #define cxmax 200     /* 最多的虚拟机代码数 */
 #define stacksize 500 /* 运行时数据栈元素最多为500个 */
-#define symnum 48
+#define symnum 53
 #define fctnum 9	
 
 /* 符号 */

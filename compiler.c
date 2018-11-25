@@ -68,7 +68,6 @@ void getch() {
 	if (cc == ll) /* 判断缓冲区中是否有字符，若无字符，则读入下一行字符到缓冲区中 */
 	{
 		if (feof(fin)) {
-			sym = period;
 			printf("Program is incomplete!\n");
 			exit(1);
 		}
@@ -90,6 +89,40 @@ void getch() {
 	ch = line[cc];
 	cc++;
 }
+
+//void getch()
+//{
+//	if (cc == ll)	/* 判断缓冲区中是否有字符，若无字符，则读入下一行字符(包括换行符)到缓冲区中 */
+//	{
+//		/* 初始化计数器 */
+//		cc = 0;
+//		ll = 0;
+//
+//		/* 此处要注意feof的操作 */
+//		char temp = fgetc(fin);
+//		while (!feof(fin))
+//		{
+//			if (ll >= 20)	/* 输入文件一行的字符太多 */
+//			{
+//				error(1);
+//			}
+//
+//			printf("%c", temp);
+//			line[cc++] = temp;
+//
+//			if (temp == '\n')
+//			{
+//				break;
+//			}
+//
+//			temp = fgetc(fin);
+//		}
+//	}
+//	if (cc != ll)
+//	{
+//		ch = line[cc++];
+//	}
+//}
 
 /*
  * 词法分析，获取一个符号
@@ -231,9 +264,7 @@ void getsym()
 			}
 			else {
 				sym = ssym[ch];		/* 按照单字符符号处理 */
-				if (sym != rbrace) {
-					getch();
-				}
+				getch();
 			}
 		}
 	}
@@ -392,10 +423,11 @@ void init()
 	statbegsys[ifsym] = true;
 	statbegsys[whilesym] = true;
 	statbegsys[readsym] = true;
+	statbegsys[writesym] = true;
 	statbegsys[forsym] = true;
 	statbegsys[repeatsym] = true;
-	statbegsys[writesym] = true;
 	statbegsys[ident] = true;
+	statbegsys[lbrace] = true;
 
 	/* 设置因子开始符号集 */
 	facbegsys[ident] = true;
@@ -456,11 +488,9 @@ void compile()
 		if (sym == lbrace) {
 			getsym();
 			addset(nxtlev, declbegsys, statbegsys, symnum);
-			nxtlev[semicolon] = true;
-			nxtlev[rbrace] = true;
 			block(0, 0, nxtlev);	/* 处理分程序 */
 			if (sym == rbrace) {
-
+				//getsym();
 			}
 			else {
 				error(21);
@@ -525,9 +555,6 @@ void block(int lev, int tx, bool* fsys)
 		error(32);
 	}
 
-	if (sym == nul) {
-		sym = period;
-	}
 
 	do {
 
@@ -619,9 +646,6 @@ void block(int lev, int tx, bool* fsys)
 
 			if (sym == rbrace) {
 				getsym();
-				//memcpy(nxtlev, statbegsys, sizeof(bool) * symnum);
-				//nxtlev[funcsym] = true;
-				//test(nxtlev, fsys, 6);
 			}
 			else {
 				error(5);	/* 漏掉了'}' */
@@ -666,9 +690,8 @@ void block(int lev, int tx, bool* fsys)
 		fprintf(ftable, "\n");
 	}
 
-
-	statement(nxtlev, &tx, lev);
-	gen(opr, 0, 0);								/* 每个过程出口都要使用的释放数据段指令 */
+	statement_list(nxtlev, &tx, lev);
+ 	gen(opr, 0, 0);								/* 每个过程出口都要使用的释放数据段指令 */
 }
 
 /*
@@ -868,51 +891,6 @@ void statement(bool* fsys, int* ptx, int lev)
 {
 	int i, cx1, cx2;
 	bool nxtlev[symnum];
-	//if (sym == ident) {
-	//	i = position(id, *ptx);
-	//	if (i == 0) {
-	//		error(6);
-	//	} 
-	//	else {
-	//		if (table[i].kind != integer && table[i].kind!=character) {
-	//			error(7);
-	//			i = 0;
-	//		}
-	//		else {
-	//			getsym();
-	//			if (sym == plus) {
-	//				gen(lod, lev - table[i].level, table[i].adr);
-	//				gen(lit, 0, 1);
-	//				gen(opr, 0, 2);
-	//				gen(sto, lev - table[i].level, table[i].adr);
-	//				getsym();
-	//			}
-	//			else if (sym == minus) {
-	//				gen(lod, lev - table[i].level, table[i].adr);
-	//				gen(lit, 0, 1);
-	//				gen(opr, 0, 3);
-	//				gen(sto, lev - table[i].level, table[i].adr);
-	//				getsym();
-	//			}
-	//			else if (sym == becomes) {
-	//				getsym();
-	//				memcpy(nxtlev, fsys, sizeof(bool) * symnum);
-	//				additive_expr(nxtlev, ptx, lev);	/* 处理赋值符号右侧表达式 */
-	//				if (i != 0) {
-	//					/* expression将执行一系列指令，但最终结果将会保存在栈顶，执行sto命令完成赋值 */
-	//					gen(sto, lev - table[i].level, table[i].adr);
-	//				}
-	//			}
-	//		}
-	//	}
-	//	if (sym == semicolon) {
-	//		getsym();
-	//	}
-	//	else {
-	//		error(1);
-	//	}
-	//}
-	//else {
 	if (sym == readsym) {
 		getsym();
 		if (sym == ident) {
