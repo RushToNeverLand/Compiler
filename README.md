@@ -6,7 +6,7 @@
 - [x] Character 			    
 - [x] Integer Array		    
 - [x] Character Array		  
-- [ ] IF...ELSE			    
+- [x] IF...ELSE			    
 - [ ] WHILE				        
 - [x] READ					      
 - [x] WRITE				       
@@ -17,12 +17,12 @@
 - [ ] Mod operator			 
 - [ ] Xor operator			  
 - [ ] Odd operator			  
-- [ ] ++, --				  
+- [x] ++, --				  
 - [ ] Switch				      
 - [ ] contine,exit,break	
 - [ ] do...while...		   
 - [ ] repeat...until...	  
-- [ ] const			        
+- [x] const			        
 <br>
 
 ## Generative Grammer:<br><br>

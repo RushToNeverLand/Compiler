@@ -473,6 +473,7 @@ void init()
 	err = 0;
 	cc = ll = cx = 0;
 	ch = ' ';
+	isChar = 0;
 }
 
 
@@ -490,7 +491,7 @@ void compile()
 			addset(nxtlev, declbegsys, statbegsys, symnum);
 			block(0, 0, nxtlev);	/* 处理分程序 */
 			if (sym == rbrace) {
-				//getsym();
+				
 			}
 			else {
 				error(21);
@@ -665,26 +666,26 @@ void block(int lev, int tx, bool* fsys)
 		{
 			switch (table[i].kind)
 			{
-			case constant:
-				fprintf(ftable, "    %d const %s ", i, table[i].name);
-				fprintf(ftable, "val=%d\n", table[i].val);
-				break;
-			case variable:
-				fprintf(ftable, "    %d var   %s ", i, table[i].name);
-				fprintf(ftable, "lev=%d addr=%d\n", table[i].level, table[i].adr);
-				break;
-			case procedure:
-				fprintf(ftable, "    %d proc  %s ", i, table[i].name);
-				fprintf(ftable, "lev=%d addr=%d size=%d\n", table[i].level, table[i].adr, table[i].size);
-				break;
-			case integer:
-				fprintf(ftable, "    %d int %s ", i, table[i].name);
-				fprintf(ftable, "val=%d\n", table[i].val);
-				break;
-			case character:
-				fprintf(ftable, "    %d char %s ", i, table[i].name);
-				fprintf(ftable, "lev=%d addr=%d\n", table[i].level, table[i].adr);
-				break;
+				case constant:
+					fprintf(ftable, "    %d const %s ", i, table[i].name);
+					fprintf(ftable, "val=%d\n", table[i].val);
+					break;
+				case variable:
+					fprintf(ftable, "    %d var   %s ", i, table[i].name);
+					fprintf(ftable, "lev=%d addr=%d\n", table[i].level, table[i].adr);
+					break;
+				case procedure:
+					fprintf(ftable, "    %d proc  %s ", i, table[i].name);
+					fprintf(ftable, "lev=%d addr=%d size=%d\n", table[i].level, table[i].adr, table[i].size);
+					break;
+				case integer:
+					fprintf(ftable, "    %d int %s ", i, table[i].name);
+					fprintf(ftable, "lev=%d addr=%d\n", table[i].level, table[i].adr);
+					break;
+				case character:
+					fprintf(ftable, "    %d char %s ", i, table[i].name);
+					fprintf(ftable, "lev=%d addr=%d\n", table[i].level, table[i].adr);
+					break;
 			}
 		}
 		fprintf(ftable, "\n");
@@ -942,7 +943,7 @@ void statement(bool* fsys, int* ptx, int lev)
 			getsym();
 			expression(nxtlev, ptx, lev);
 
-			if (isChar) {
+			if (!isChar) {
 				gen(opr, 0, 14);
 			}
 			else {
@@ -1024,8 +1025,6 @@ void statement(bool* fsys, int* ptx, int lev)
 						else {
 							error(17);					/* 缺少(*/
 						}
-						memcpy(nxtlev, fsys, sizeof(bool) * symnum);
-						nxtlev[lbrace] = true;			/* 后继符号为do */
 						expression(nxtlev, ptx, lev);	/* 调用条件处理 */
 						cx2 = cx;						/* 保存循环体的结束的下一个位置 */
 						gen(jpc, 0, 0);					/* 生成条件跳转，但跳出循环的地址未知，标记为0等待回填 */
@@ -1035,8 +1034,6 @@ void statement(bool* fsys, int* ptx, int lev)
 						else {
 							error(16);	/* 缺少)*/
 						}
-						memcpy(nxtlev, fsys, sizeof nxtlev);
-						nxtlev[rbrace] = true;
 						statement(fsys, ptx, lev);	/* 循环体 */
 						gen(jmp, 0, cx1);	/* 生成条件跳转指令，跳转到前面判断条件操作的位置 */
 						code[cx2].a = cx;	/* 回填跳出循环的地址 */
@@ -1078,8 +1075,9 @@ void statement(bool* fsys, int* ptx, int lev)
 									memcpy(nxtlev, fsys, sizeof nxtlev);
 									nxtlev[rbrace] = true;
 									statement(nxtlev, ptx, lev);
-									if (sym == rbrace)
+									if (sym == rbrace) {
 										getsym();
+									}
 									else error(21);
 									gen(lod, lev - table[i].level, table[i].adr);
 									gen(lit, 0, 1);
@@ -1150,12 +1148,11 @@ void expression(bool *fsys, int *ptx, int lev) {
 				else {
 					shift = 0;
 					getsym();
-					int shift2 = shift;
 					if (sym == lrange) { /* 判断是否是array中的元素*/
 						getsym();
 						if (sym == number) {
+							shift = num;
 							getsym();
-							int tempNumber = num;
 							if (sym == rrange) {
 								getsym();
 							}
@@ -1169,40 +1166,66 @@ void expression(bool *fsys, int *ptx, int lev) {
 					}
 					if (sym == becomes) { /* = */
 						getsym();
-						additive_expr(nxtlev, ptx, lev);	/* 处理赋值符号右侧表达式 */
+						expression(nxtlev, ptx, lev);	/* 处理赋值符号右侧表达式 */
 						if (i != 0) {
 							gen(sto, lev - table[i].level, table[i].adr);	/* expression将执行一系列指令，但最终结果将会保存在栈顶，执行sto命令完成赋值 */
 						}
-
-					}
-					else if (sym == neq) { /* != */
-						additive_expr(nxtlev, ptx, lev);
 					}
 					else if (sym == eql) { /* == */
+						gen(lod, lev - table[i].level, table[i].adr);
+						getsym();
 						additive_expr(nxtlev, ptx, lev);
+						gen(opr, 0, 8);
+					}
+					else if (sym == neq) { /* != */
+						gen(lod, lev - table[i].level, table[i].adr);
+						getsym();
+						additive_expr(nxtlev, ptx, lev);
+						gen(opr, 0, 9);
 					}
 					else if (sym == lss) { /* < */
+						gen(lod, lev - table[i].level, table[i].adr);
+						getsym();
 						additive_expr(nxtlev, ptx, lev);
-					}
-					else if (sym == leq) { /* <= */
-						additive_expr(nxtlev, ptx, lev);
-					}
-					else if (sym == gtr) { /* > */
-						additive_expr(nxtlev, ptx, lev);
+						gen(opr, 0, 10);
 					}
 					else if (sym == geq) { /* >= */
+						gen(lod, lev - table[i].level, table[i].adr);
+						getsym();
 						additive_expr(nxtlev, ptx, lev);
+						gen(opr, 0, 11);
+					}
+					else if (sym == gtr) { /* > */
+						gen(lod, lev - table[i].level, table[i].adr);
+						getsym();
+						additive_expr(nxtlev, ptx, lev);
+						gen(opr, 0, 12);
+					}
+					else if (sym == leq) { /* <= */
+						gen(lod, lev - table[i].level, table[i].adr);
+						getsym();
+						additive_expr(nxtlev, ptx, lev);
+						gen(opr, 0, 13);
+					}
+					else if (sym == semicolon) { /* ; */
+
+					}
+					else if (sym == selfminus) { /* ++ */
+						gen(lod, lev - table[i].level, table[i].adr);
+						gen(lit, 0, 1);
+						gen(opr, 0, 3);
+						getsym();
+					}
+					else if (sym == selfplus) { /* -- */
+						gen(lod, lev - table[i].level, table[i].adr);
+						gen(lit, 0, 1);
+						gen(opr, 0, 2);
+						getsym();
 					}
 					else {
 						error(6);
 					}
 				}
-			}
-			if (sym == semicolon) {
-				getsym();
-			}
-			else {
-				error(1);
 			}
 		}
 		else if (sym == number) {
@@ -1242,13 +1265,6 @@ void simple_expr(bool* fsys, int* ptx, int lev) {
 	else
 	{
 		/* 逻辑表达式处理 */
-		memcpy(nxtlev, fsys, sizeof(bool) * symnum);
-		nxtlev[eql] = true;
-		nxtlev[neq] = true;
-		nxtlev[lss] = true;
-		nxtlev[leq] = true;
-		nxtlev[gtr] = true;
-		nxtlev[geq] = true;
 		additive_expr(nxtlev, ptx, lev);
 		if (sym != eql && sym != neq && sym != lss && sym != leq && sym != gtr && sym != geq)
 		{
@@ -1261,24 +1277,24 @@ void simple_expr(bool* fsys, int* ptx, int lev) {
 			additive_expr(fsys, ptx, lev);
 			switch (relop)
 			{
-			case eql:
-				gen(opr, 0, 8);
-				break;
-			case neq:
-				gen(opr, 0, 9);
-				break;
-			case lss:
-				gen(opr, 0, 10);
-				break;
-			case geq:
-				gen(opr, 0, 11);
-				break;
-			case gtr:
-				gen(opr, 0, 12);
-				break;
-			case leq:
-				gen(opr, 0, 13);
-				break;
+				case eql:
+					gen(opr, 0, 8);
+					break;
+				case neq:
+					gen(opr, 0, 9);
+					break;
+				case lss:
+					gen(opr, 0, 10);
+					break;
+				case geq:
+					gen(opr, 0, 11);
+					break;
+				case gtr:
+					gen(opr, 0, 12);
+					break;
+				case leq:
+					gen(opr, 0, 13);
+					break;
 			}
 		}
 	}
@@ -1295,9 +1311,6 @@ void additive_expr(bool* fsys, int* ptx, int lev)
 	{
 		addop = sym;	/* 保存开头的正负号 */
 		getsym();
-		memcpy(nxtlev, fsys, sizeof(bool) * symnum);
-		nxtlev[plus] = true;
-		nxtlev[minus] = true;
 		term(nxtlev, ptx, lev);	/* 处理项 */
 		if (addop == minus)
 		{
@@ -1306,17 +1319,23 @@ void additive_expr(bool* fsys, int* ptx, int lev)
 	}
 	else	/* 此时表达式被看作项的加减 */
 	{
-		memcpy(nxtlev, fsys, sizeof(bool) * symnum);
-		nxtlev[plus] = true;
-		nxtlev[minus] = true;
 		term(nxtlev, ptx, lev);	/* 处理项 */
 	}
+	//while (sym == selfminus || sym == selfplus) {
+	//	addop = sym;
+	//	getsym();
+	//	if (addop == selfminus) {
+	//		gen(lit, 0, 1);
+	//		gen(opr, 0, 3);
+	//	}
+	//	else {
+	//		gen(lit, 0, 1);
+	//		gen(opr, 0, 2);
+	//	}
+	//}
 	while (sym == plus || sym == minus) {
 		addop = sym;
 		getsym();
-		memcpy(nxtlev, fsys, sizeof(bool) * symnum);
-		nxtlev[plus] = true;
-		nxtlev[minus] = true;
 		term(nxtlev, ptx, lev);	/* 处理项 */
 		if (addop == plus) {
 			gen(opr, 0, 2);	/* 生成加法指令 */
@@ -1334,10 +1353,6 @@ void term(bool* fsys, int* ptx, int lev)
 {
 	enum symbol mulop;	/* 用于保存乘除法符号 */
 	bool nxtlev[symnum];
-
-	memcpy(nxtlev, fsys, sizeof(bool) * symnum);
-	nxtlev[times] = true;
-	nxtlev[slash] = true;
 	factor(nxtlev, ptx, lev);	/* 处理因子 */
 	while (sym == times || sym == slash || sym == mod) {
 		mulop = sym;
@@ -1374,20 +1389,47 @@ void factor(bool* fsys, int* ptx, int lev)
 			}
 			else
 			{
-				switch (table[i].kind)
-				{
-				case constant:	/* 标识符为常量 */
-					gen(lit, 0, table[i].val);	/* 直接把常量的值入栈 */
-					break;
-				case variable:	/* 标识符为变量 */
-					gen(lod, lev - table[i].level, table[i].adr);	/* 找到变量地址并将其值入栈 */
-					break;
-				case procedure:	/* 标识符为过程 */
-					error(21);	/* 不能为过程 */
-					break;
+				getsym();
+				if (sym == lrange) {
+					getsym();
+					if (sym == number) {
+						shift = num;
+						getsym();
+						if (sym == rrange) {
+							getsym();
+							switch (table[i].kind) 
+							{
+								case integer:
+									gen(lod, lev - table[i].level, table[i].adr + shift);
+									break;
+								case character:
+									gen(lod, lev - table[i].level, table[i].adr + shift);
+									break;
+								case procedure:	/* 标识符为过程 */
+									error(21);	/* 不能为过程 */
+									break;
+							}
+						}
+					}
+				}
+				else {
+					switch (table[i].kind)
+					{
+						case constant:	/* 标识符为常量 */
+							gen(lit, 0, table[i].val);	/* 直接把常量的值入栈 */
+							break;
+						case integer:	/* 标识符为变量 */
+							gen(lod, lev - table[i].level, table[i].adr);	/* 找到变量地址并将其值入栈 */
+							break;
+						case character:	/* 标识符为变量 */
+							gen(lod, lev - table[i].level, table[i].adr);	/* 找到变量地址并将其值入栈 */
+							break;
+						case procedure:	/* 标识符为过程 */
+							error(21);	/* 不能为过程 */
+							break;
+					}
 				}
 			}
-			getsym();
 		}
 		else
 		{
@@ -1459,24 +1501,24 @@ void condition(bool* fsys, int* ptx, int lev)
 			additive_expr(fsys, ptx, lev);
 			switch (relop)
 			{
-			case eql:
-				gen(opr, 0, 8);
-				break;
-			case neq:
-				gen(opr, 0, 9);
-				break;
-			case lss:
-				gen(opr, 0, 10);
-				break;
-			case geq:
-				gen(opr, 0, 11);
-				break;
-			case gtr:
-				gen(opr, 0, 12);
-				break;
-			case leq:
-				gen(opr, 0, 13);
-				break;
+				case eql:
+					gen(opr, 0, 8);
+					break;
+				case neq:
+					gen(opr, 0, 9);
+					break;
+				case lss:
+					gen(opr, 0, 10);
+					break;
+				case geq:
+					gen(opr, 0, 11);
+					break;
+				case gtr:
+					gen(opr, 0, 12);
+					break;
+				case leq:
+					gen(opr, 0, 13);
+					break;
 			}
 		}
 	}
