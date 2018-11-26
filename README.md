@@ -2,27 +2,27 @@
 
 ## CheckList<br><br>
 
-### - [x] Integer 				    <br>- [x] Integer
-### Character 			    <br>
-### Integer Array		    <br>
-### Character Array		  <br>
-### IF...ELSE			      <br>
-### WHILE				        <br>
-### READ					      <br>
-### WRITE				        <br>
-### COMPOUND				    <br>
-### FOR					        <br>
-### Procedure			      <br>
-### CALL					      <br>
-### Mod operator			  <br>
-### Xor operator			  <br>
-### Odd operator			  <br>
-### ++, --				      <br>
-### Switch				      <br>
-### contine,exit,break	<br>
-### do...while...		    <br>
-### repeat...until...	  <br>
-### const				        <br>
+- [x] Integer 		
+Character 			    
+Integer Array		    
+Character Array		  
+IF...ELSE			    
+WHILE				        
+READ					      
+WRITE				       
+COMPOUND				  
+FOR					       
+Procedure			      
+CALL					    
+Mod operator			 
+Xor operator			  
+Odd operator			  
+++, --				  
+Switch				      
+contine,exit,break	
+do...while...		   
+repeat...until...	  
+const				        
 <br>
 
 ## Generative Grammer:<br><br>
