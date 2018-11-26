@@ -1,28 +1,28 @@
-#This is a compiler based on PL/0 <br><br>
+#This is a compiler based on PL/0# <br><br>
 
 ##CheckList<br><br>
 
-###Integer 				done<br>
-###Character 			done<br>
-###Integer Array		done<br>
+###Integer 				    done<br>
+###Character 			    done<br>
+###Integer Array		  done<br>
 ###Character Array		done<br>
-###IF...ELSE			need to do<br>
-###WHILE				need to do<br>
-###READ					done<br>
-###WRITE				need to do<br>
-###COMPOUND				done<br>
-###FOR					need to do<br>
-###Procedure			need to do<br>
-###CALL					need to do<br>
-###Mod operator			need to do<br>
-###Xor operator			need to do<br>
-###Odd operator			need to do<br>
-###++, --				need to do<br>
-###Switch				need to do<br>
+###IF...ELSE			    need to do<br>
+###WHILE				      need to do<br>
+###READ					      done<br>
+###WRITE				      need to do<br>
+###COMPOUND				    done<br>
+###FOR					      need to do<br>
+###Procedure			    need to do<br>
+###CALL					      need to do<br>
+###Mod operator			  need to do<br>
+###Xor operator			  need to do<br>
+###Odd operator			  need to do<br>
+###++, --				      need to do<br>
+###Switch				      need to do<br>
 ###contine,exit,break	need to do<br>
-###do...while...		need to do<br>
+###do...while...		  need to do<br>
 ###repeat...until...	need to do<br>
-###const				need to do<br>
+###const				      need to do<br>
 <br>
 
 ##Generative Grammer:<br><br>
