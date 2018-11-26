@@ -2,27 +2,27 @@
 
 ## CheckList<br><br>
 
-- [x] Integer 		
-Character 			    
-Integer Array		    
-Character Array		  
-IF...ELSE			    
-WHILE				        
-READ					      
-WRITE				       
-COMPOUND				  
-FOR					       
-Procedure			      
-CALL					    
-Mod operator			 
-Xor operator			  
-Odd operator			  
-++, --				  
-Switch				      
-contine,exit,break	
-do...while...		   
-repeat...until...	  
-const				        
+- [x]Integer 		
+- [x]Character 			    
+- [x]Integer Array		    
+- [x]Character Array		  
+- [ ]IF...ELSE			    
+- [ ]WHILE				        
+- [x]READ					      
+- [x]WRITE				       
+- [x]COMPOUND				  
+- [ ]FOR					       
+- [x]Procedure			      
+- [ ]CALL					    
+- [ ]Mod operator			 
+- [ ]Xor operator			  
+- [ ]Odd operator			  
+- [ ]++, --				  
+- [ ]Switch				      
+- [ ]contine,exit,break	
+- [ ]do...while...		   
+- [ ]repeat...until...	  
+- [ ]const				        
 <br>
 
 ## Generative Grammer:<br><br>
