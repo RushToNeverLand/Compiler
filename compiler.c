@@ -463,7 +463,7 @@ void init()
 	strcpy(errorInfo[25], "for循环缺少'...'");
 	strcpy(errorInfo[30], "函数嵌套层数过多");
 	strcpy(errorInfo[31], "call声明后面缺少过程名");
-	strcpy(errorInfo[32], "常量声明中的=后应是数字");
+	strcpy(errorInfo[32], "=后应是数字");
 	strcpy(errorInfo[33], "cannot find the single symbol");
 	strcpy(errorInfo[34], "数组缺少[");
 	strcpy(errorInfo[35], "声明数组缺少声明数组大小");
@@ -1050,22 +1050,23 @@ void statement(bool* fsys, int* ptx, int lev)
 								}
 								else {
 									getsym();
+									
+									gen(lod, lev - table[i].level, table[i].adr);
 									if (sym == becomes) getsym();
 									else error(22);
+									if (sym == number) getsym();
+									else error(32);
+									gen(lit, 0, num);
+									gen(sto, lev - table[i].level, table[i].adr);
 
 									if (sym != semicolon) error(1);	/* 少了分号*/
 									else getsym();
-									memcpy(nxtlev, fsys, sizeof nxtlev);
-									//nxtlev[range] = true;
+
 									additive_expr(nxtlev, ptx, lev);
 									gen(sto, lev - table[i].level, table[i].adr);
-									//if (sym != range) error(25);
-									//else getsym();
+
 									cx1 = cx;
-									gen(lod, lev - table[i].level, table[i].adr);
-									memcpy(nxtlev, fsys, sizeof nxtlev);
-									nxtlev[lbrace] = true;
-									additive_expr(nxtlev, ptx, lev);
+									expression(nxtlev, ptx, lev);
 									gen(opr, 0, 13);
 									cx2 = cx;
 									gen(jpc, 0, 0);
@@ -1165,10 +1166,35 @@ void expression(bool *fsys, int *ptx, int lev) {
 						}
 					}
 					if (sym == becomes) { /* = */
+						gen(lod, lev - table[i].level, table[i].adr);
 						getsym();
 						expression(nxtlev, ptx, lev);	/* 处理赋值符号右侧表达式 */
 						if (i != 0) {
 							gen(sto, lev - table[i].level, table[i].adr);	/* expression将执行一系列指令，但最终结果将会保存在栈顶，执行sto命令完成赋值 */
+						}
+					}
+					else if (sym == plus || sym == minus) {
+						oldSym = sym;
+						gen(lod, lev - table[i].level, table[i].adr);
+						getsym();
+						term(nxtlev, ptx, lev);
+						if (oldSym == plus) {
+							gen(opr, 0, 2);
+						}
+						else {
+							gen(opr, 0, 3);
+						}
+					}
+					else if (sym == times || sym == slash) {
+						oldSym = sym;
+						gen(lod, lev - table[i].level, table[i].adr);
+						getsym();
+						factor(nxtlev, ptx, lev);
+						if (oldSym == times) {
+							gen(opr, 0, 4);
+						}
+						else {
+							gen(opr, 0, 5);
 						}
 					}
 					else if (sym == eql) { /* == */
@@ -1321,18 +1347,6 @@ void additive_expr(bool* fsys, int* ptx, int lev)
 	{
 		term(nxtlev, ptx, lev);	/* 处理项 */
 	}
-	//while (sym == selfminus || sym == selfplus) {
-	//	addop = sym;
-	//	getsym();
-	//	if (addop == selfminus) {
-	//		gen(lit, 0, 1);
-	//		gen(opr, 0, 3);
-	//	}
-	//	else {
-	//		gen(lit, 0, 1);
-	//		gen(opr, 0, 2);
-	//	}
-	//}
 	while (sym == plus || sym == minus) {
 		addop = sym;
 		getsym();
@@ -1540,7 +1554,6 @@ void interpret()
 	s[2] = 0;
 	s[3] = 0;
 	do {
-		//if (cx == 0) break;
 		i = code[p];	/* 读当前指令 */
 		p = p + 1;
 		switch (i.f)

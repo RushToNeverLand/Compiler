@@ -28,7 +28,7 @@
 #define amax 2048     /* 地址上界*/
 #define levmax 1      /* 最大允许过程嵌套声明层数*/
 #define cxmax 200     /* 最多的虚拟机代码数 */
-#define stacksize 500 /* 运行时数据栈元素最多为500个 */
+#define stacksize 200 /* 运行时数据栈元素最多为500个 */
 #define symnum 53
 #define fctnum 9	
 

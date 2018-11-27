@@ -1,4 +1,4 @@
-# This is a compiler based on PL/0 <br><br>
+# This is a X0-compiler based on PL/0 <br><br>
 
 ## CheckList<br><br>
 
@@ -7,7 +7,7 @@
 - [x] Integer Array		    
 - [x] Character Array		  
 - [x] IF...ELSE			    
-- [ ] WHILE				        
+- [x] WHILE				        
 - [x] READ					      
 - [x] WRITE				       
 - [x] COMPOUND				  
