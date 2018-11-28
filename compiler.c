@@ -90,39 +90,6 @@ void getch() {
 	cc++;
 }
 
-//void getch()
-//{
-//	if (cc == ll)	/* 判断缓冲区中是否有字符，若无字符，则读入下一行字符(包括换行符)到缓冲区中 */
-//	{
-//		/* 初始化计数器 */
-//		cc = 0;
-//		ll = 0;
-//
-//		/* 此处要注意feof的操作 */
-//		char temp = fgetc(fin);
-//		while (!feof(fin))
-//		{
-//			if (ll >= 20)	/* 输入文件一行的字符太多 */
-//			{
-//				error(1);
-//			}
-//
-//			printf("%c", temp);
-//			line[cc++] = temp;
-//
-//			if (temp == '\n')
-//			{
-//				break;
-//			}
-//
-//			temp = fgetc(fin);
-//		}
-//	}
-//	if (cc != ll)
-//	{
-//		ch = line[cc++];
-//	}
-//}
 
 /*
  * 词法分析，获取一个符号
@@ -890,7 +857,7 @@ void statement_list(bool *fsys, int *ptx, int lev) {
  */
 void statement(bool* fsys, int* ptx, int lev)
 {
-	int i, cx1, cx2;
+	int i, cx1, cx2, oldNum;
 	bool nxtlev[symnum];
 	if (sym == readsym) {
 		getsym();
@@ -1040,54 +1007,62 @@ void statement(bool* fsys, int* ptx, int lev)
 					}
 					else if (sym == forsym) {
 						getsym();
-						if (sym == ident) {
-							i = position(id, *ptx);
-							if (i == 0) error(6);
-							else {
-								if (table[i].kind != variable) {
-									error(7);
-									i = 0;
-								}
+						if (sym == lparen) {
+							getsym();
+							if (sym == ident) {
+								i = position(id, *ptx);
+								if (i == 0) error(6);
 								else {
-									getsym();
-									
-									gen(lod, lev - table[i].level, table[i].adr);
-									if (sym == becomes) getsym();
-									else error(22);
-									if (sym == number) getsym();
-									else error(32);
-									gen(lit, 0, num);
-									gen(sto, lev - table[i].level, table[i].adr);
-
-									if (sym != semicolon) error(1);	/* 少了分号*/
-									else getsym();
-
-									additive_expr(nxtlev, ptx, lev);
-									gen(sto, lev - table[i].level, table[i].adr);
-
-									cx1 = cx;
-									expression(nxtlev, ptx, lev);
-									gen(opr, 0, 13);
-									cx2 = cx;
-									gen(jpc, 0, 0);
-									if (sym == lbrace)
-										getsym();
-									else error(20);
-									memcpy(nxtlev, fsys, sizeof nxtlev);
-									nxtlev[rbrace] = true;
-									statement(nxtlev, ptx, lev);
-									if (sym == rbrace) {
-										getsym();
+									if (table[i].kind != integer) {
+										error(7);
+										i = 0;
 									}
-									else error(21);
-									gen(lod, lev - table[i].level, table[i].adr);
-									gen(lit, 0, 1);
-									gen(opr, 0, 2);
-									gen(sto, lev - table[i].level, table[i].adr);
-									gen(jmp, 0, cx1);
-									code[cx2].a = cx;
+									else {
+										getsym();
+
+										gen(lod, lev - table[i].level, table[i].adr);
+										if (sym == becomes) getsym();
+										else error(22);
+										if (sym == number) {
+											getsym();
+										}
+										else error(32);
+										gen(lit, 0, num);
+										gen(sto, lev - table[i].level, table[i].adr);
+
+										if (sym != semicolon) error(1);	/* 少了分号*/
+										else getsym();
+
+										simple_expr(nxtlev, ptx, lev);
+										oldNum = num + 1;
+										//gen(sto, lev - table[i].level, table[i].adr);
+
+										if (sym != semicolon) error(1);
+										else getsym();
+
+										cx1 = cx;
+										expression(nxtlev, ptx, lev);
+										gen(lit, 0, oldNum);
+										gen(opr, 0, 13);
+										cx2 = cx;
+										gen(jpc, 0, 0);
+										if (sym == rparen) {
+											getsym();
+										}
+										else {
+											error(17);
+										}
+
+										statement(nxtlev, ptx, lev);
+
+										gen(jmp, 0, cx1);
+										code[cx2].a = cx;
+									}
 								}
 							}
+						}
+						else {
+							error(16);
 						}
 					}
 					else if (sym == lbrace) {
@@ -1240,13 +1215,28 @@ void expression(bool *fsys, int *ptx, int lev) {
 						gen(lod, lev - table[i].level, table[i].adr);
 						gen(lit, 0, 1);
 						gen(opr, 0, 3);
+						gen(sto, lev - table[i].level, table[i].adr);
+						gen(lod, lev - table[i].level, table[i].adr);
 						getsym();
 					}
 					else if (sym == selfplus) { /* -- */
 						gen(lod, lev - table[i].level, table[i].adr);
 						gen(lit, 0, 1);
 						gen(opr, 0, 2);
+						gen(sto, lev - table[i].level, table[i].adr);
+						gen(lod, lev - table[i].level, table[i].adr);
 						getsym();
+					}
+					else if (sym == mod) {
+						getsym();
+						if (sym == number) {
+							gen(lit, 0, num);
+							gen(opr, 0, 18);
+							getsym();
+						}
+						else {
+							error(32);
+						}
 					}
 					else {
 						error(6);
@@ -1379,7 +1369,7 @@ void term(bool* fsys, int* ptx, int lev)
 			gen(opr, 0, 5);	/* 生成除法指令 */
 		}
 		else {
-			gen(opr, 0, 17);
+			gen(opr, 0, 18);
 		}
 	}
 }
@@ -1614,6 +1604,7 @@ void interpret()
 				break;
 			case 13: /* 次栈顶项是否小于等于栈顶项 */
 				t = t - 1;
+				//printf("%d %d\n", s[t], s[t + 1]);
 				s[t] = (s[t] <= s[t + 1]);
 				break;
 			case 14:/* 栈顶值输出 */
@@ -1636,6 +1627,10 @@ void interpret()
 				printf("%c", s[t]);
 				fprintf(fresult, "%c", s[t]);
 				t = t - 1;
+				break;
+			case 18:/* 求余 */
+				t = t - 1;
+				s[t] = s[t] % s[t + 1];
 				break;
 			}
 			break;

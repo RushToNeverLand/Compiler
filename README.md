@@ -11,17 +11,17 @@
 - [x] READ					      
 - [x] WRITE				       
 - [x] COMPOUND				  
-- [ ] FOR					       
-- [x] Procedure			      
-- [ ] CALL					    
-- [ ] Mod operator			 
-- [ ] Xor operator			  
-- [ ] Odd operator			  
-- [x] ++, --				  
-- [ ] Switch				      
+- [x] FOR					       
+- [x] Procedure		
+- [ ] Switch	
+- [ ] repeat...until...	 
 - [ ] contine,exit,break	
-- [ ] do...while...		   
-- [ ] repeat...until...	  
+- [ ] do...while...	      
+- [ ] CALL					    
+- [x] Mod operator			 
+- [ ] Xor operator			  
+- [ ] Odd operator     (PL/0 have already solved?)			  
+- [x] ++, --
 - [x] const			        
 <br>
 
