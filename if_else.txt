@@ -1,0 +1,9 @@
+main{
+	int a;
+	int b;
+	read a;
+	if(a == 1)
+		b = 2;
+	else 
+		b = 3;
+}  

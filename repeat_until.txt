@@ -1,0 +1,7 @@
+main{
+	int a;
+	a = 0;
+	repeat{
+		a++;
+	}until(a<10)
+}   

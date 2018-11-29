@@ -1,7 +1,6 @@
 # This is a X0-compiler based on PL/0 <br><br>
 
 ## CheckList<br><br>
-
 - [x] Integer 		
 - [x] Character 			    
 - [x] Integer Array		    
@@ -13,12 +12,12 @@
 - [x] COMPOUND				  
 - [x] FOR					       
 - [x] Procedure		
+- [x] CALL		
+- [x] repeat...until...	 
+- [x] do...while...	  
 - [ ] Switch	
-- [ ] repeat...until...	 
-- [ ] contine,exit,break	
-- [ ] do...while...	      
-- [ ] CALL					    
-- [x] Mod operator			 
+- [ ] contine,exit,break	    
+- [x] Mod operator		//there is some bugs	 
 - [ ] Xor operator			  
 - [ ] Odd operator     (PL/0 have already solved?)			  
 - [x] ++, --
@@ -44,4 +43,3 @@
 ![image](https://github.com/RushToNeverLand/Compiler/raw/master/temp/16.png)<br>
 ![image](https://github.com/RushToNeverLand/Compiler/raw/master/temp/17.png)<br>
 ![image](https://github.com/RushToNeverLand/Compiler/raw/master/temp/18.png)<br>
-

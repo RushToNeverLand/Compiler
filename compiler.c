@@ -307,6 +307,7 @@ void init()
 	ssym[','] = comma;
 	ssym[';'] = semicolon;
 	ssym['%'] = mod;
+	ssym['^'] = xor;
 
 	/* 设置保留字名字,按照字母顺序，便于二分查找 */
 	strcpy(&(word[0][0]), "and");
@@ -342,7 +343,7 @@ void init()
 	wsym[4] = casesym;
 	wsym[5] = charsym;
 	wsym[6] = constsym;
-	wsym[7] = constinuesym;
+	wsym[7] = continuesym;
 	wsym[8] = dosym;
 	wsym[9] = elsesym;
 	wsym[10] = exitsym;
@@ -387,12 +388,14 @@ void init()
 
 	/* 设置语句开始符号集 */
 	statbegsys[callsym] = true;
+	statbegsys[dosym] = true;
 	statbegsys[ifsym] = true;
 	statbegsys[whilesym] = true;
 	statbegsys[readsym] = true;
 	statbegsys[writesym] = true;
 	statbegsys[forsym] = true;
 	statbegsys[repeatsym] = true;
+	statbegsys[switchsym] = true;
 	statbegsys[ident] = true;
 	statbegsys[lbrace] = true;
 
@@ -435,7 +438,9 @@ void init()
 	strcpy(errorInfo[34], "数组缺少[");
 	strcpy(errorInfo[35], "声明数组缺少声明数组大小");
 	strcpy(errorInfo[36], "数组缺少]");
-	strcpy(errorInfo[37], "loss the symbol main");
+	strcpy(errorInfo[37], "缺少标识符main");
+	strcpy(errorInfo[38], "缺少标识符until");
+	strcpy(errorInfo[39], "缺少标识符while");
 
 	err = 0;
 	cc = ll = cx = 0;
@@ -609,7 +614,6 @@ void block(int lev, int tx, bool* fsys)
 			if (sym == lbrace) getsym();
 			else error(20);
 
-			memcpy(nxtlev, fsys, sizeof(bool) * symnum);
 			block(lev + 1, tx, nxtlev); /* 递归调用 */
 
 			if (sym == rbrace) {
@@ -657,7 +661,7 @@ void block(int lev, int tx, bool* fsys)
 		}
 		fprintf(ftable, "\n");
 	}
-
+	isDo = 0;
 	statement_list(nxtlev, &tx, lev);
  	gen(opr, 0, 0);								/* 每个过程出口都要使用的释放数据段指令 */
 }
@@ -984,26 +988,40 @@ void statement(bool* fsys, int* ptx, int lev)
 				}
 				else {
 					if (sym == whilesym) {				/* 准备按照while语句处理 */
-						cx1 = cx;						/* 保存判断条件操作的位置 */
-						getsym();
-						if (sym == lparen) {
+						if (isDo) { 
+							/* do statement_list while(expression) */
 							getsym();
+							if (sym != lparen) error(16);
+							else getsym();
+							expression(nxtlev, ptx, lev);
+							if (sym != rparen) error(17);
+							else getsym();
+							gen(jeq, 0, doCX);
+							isDo = 0;
 						}
-						else {
-							error(17);					/* 缺少(*/
-						}
-						expression(nxtlev, ptx, lev);	/* 调用条件处理 */
-						cx2 = cx;						/* 保存循环体的结束的下一个位置 */
-						gen(jpc, 0, 0);					/* 生成条件跳转，但跳出循环的地址未知，标记为0等待回填 */
-						if (sym == rparen) {
+						else {	
+							/* while(expression) statement_list */
+							cx1 = cx;						/* 保存判断条件操作的位置 */
 							getsym();
+							if (sym == lparen) {
+								getsym();
+							}
+							else {
+								error(17);					/* 缺少(*/
+							}
+							expression(nxtlev, ptx, lev);	/* 调用条件处理 */
+							cx2 = cx;						/* 保存循环体的结束的下一个位置 */
+							gen(jpc, 0, 0);					/* 生成条件跳转，但跳出循环的地址未知，标记为0等待回填 */
+							if (sym == rparen) {
+								getsym();
+							}
+							else {
+								error(16);	/* 缺少)*/
+							}
+							statement(fsys, ptx, lev);	/* 循环体 */
+							gen(jmp, 0, cx1);	/* 生成条件跳转指令，跳转到前面判断条件操作的位置 */
+							code[cx2].a = cx;	/* 回填跳出循环的地址 */
 						}
-						else {
-							error(16);	/* 缺少)*/
-						}
-						statement(fsys, ptx, lev);	/* 循环体 */
-						gen(jmp, 0, cx1);	/* 生成条件跳转指令，跳转到前面判断条件操作的位置 */
-						code[cx2].a = cx;	/* 回填跳出循环的地址 */
 					}
 					else if (sym == forsym) {
 						getsym();
@@ -1074,6 +1092,45 @@ void statement(bool* fsys, int* ptx, int lev)
 						else {
 							error(21);
 						}
+					}
+					else if (sym == switchsym) {
+						getsym();
+						if (sym != lparen) error(16);
+						else getsym();
+						if (sym != ident) error(6);
+						i = position(id, *ptx);						
+						if (i == 0) error(6);
+						else getsym();
+						if (sym != rparen) error(17);
+						else getsym();
+						if (sym != lbrace) error(20);
+						else getsym();
+						while (sym == casesym) {
+							getsym();
+							statement_list(nxtlev, ptx, lev);
+
+						}
+						if (sym != rbrace) error(21);
+						else getsym();
+					}
+					else if (sym == repeatsym) {
+						getsym();
+						int cx1 = cx;
+						statement_list(nxtlev, ptx, lev);
+						if (sym != untilsym) error(38);
+						else getsym();
+						if (sym != lparen) error(16);
+						else getsym();
+						expression(nxtlev, ptx, lev);
+						if (sym != rparen) error(17);
+						else getsym();
+						gen(jeq, 0, cx1);
+					}
+					else if (sym == dosym) {
+						isDo = 1;
+						getsym();
+						doCX = cx;
+						statement_list(nxtlev, ptx, lev);
 					}
 					else {
 						expression_stat(nxtlev, ptx, lev);
@@ -1237,6 +1294,11 @@ void expression(bool *fsys, int *ptx, int lev) {
 						else {
 							error(32);
 						}
+					}
+					else if (sym == xor) {
+						getsym();
+						additive_expr(nxtlev, ptx, lev);
+						gen(opr, 0, 19);
 					}
 					else {
 						error(6);
@@ -1592,6 +1654,7 @@ void interpret()
 				break;
 			case 10:/* 次栈顶项是否小于栈顶项 */
 				t = t - 1;
+				//printf("%d %d\n", s[t], s[t + 1]);
 				s[t] = (s[t] < s[t + 1]);
 				break;
 			case 11:/* 次栈顶项是否大于等于栈顶项 */
@@ -1632,6 +1695,10 @@ void interpret()
 				t = t - 1;
 				s[t] = s[t] % s[t + 1];
 				break;
+			case 19:/* 异或 */
+				t = t - 1;
+				s[t] = s[t] ^ s[t + 1];
+				break;
 			}
 			break;
 		case lod:	/* 取相对当前过程的数据基地址为a的内存的值到栈顶 */
@@ -1657,6 +1724,11 @@ void interpret()
 			break;
 		case jpc:	/* 条件跳转 */
 			if (s[t] == 0)
+				p = i.a;
+			t = t - 1;
+			break;
+		case jeq:
+			if (s[t] != 0)
 				p = i.a;
 			t = t - 1;
 			break;

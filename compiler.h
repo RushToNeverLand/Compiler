@@ -29,7 +29,7 @@
 #define levmax 1      /* 最大允许过程嵌套声明层数*/
 #define cxmax 200     /* 最多的虚拟机代码数 */
 #define stacksize 200 /* 运行时数据栈元素最多为500个 */
-#define symnum 53
+#define symnum 54
 #define fctnum 9	
 
 /* 符号 */
@@ -40,7 +40,7 @@ enum symbol {
 	rparen, comma, semicolon, period, becomes,
 	mainsym, continsym, ifsym, breaksym, whilesym,
 	writesym, readsym, dosym, callsym, constsym,
-	elsesym, selfplus, selfminus, constinuesym, switchsym,
+	elsesym, selfplus, selfminus, continuesym, switchsym,
 	repeatsym, forsym, mod, untilsym, xor,
 	lbrace, rbrace, lrange, rrange, exitsym,
 	casesym, andsym, boolsym, charsym,
@@ -119,6 +119,8 @@ FILE* fdebug;	/* 输出调试信息*/
 char fname[al];
 int err;        /* 错误计数器 */
 int isChar;
+int isDo;
+int doCX;
 
 void compile();
 void error(int n);
