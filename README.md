@@ -15,11 +15,9 @@
 - [x] CALL		
 - [x] repeat...until...	 
 - [x] do...while...	  
-- [ ] Switch	
-- [ ] contine,exit,break	    
-- [x] Mod operator		//there is some bugs	 
-- [ ] Xor operator			  
-- [ ] Odd operator     (PL/0 have already solved?)			  
+- [x] Mod operator	 
+- [x] Xor operator			  
+- [x] Odd operator     (PL/0 have already solved?)			  
 - [x] ++, --
 - [x] const			        
 <br>

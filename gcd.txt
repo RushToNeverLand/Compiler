@@ -1,0 +1,21 @@
+main{
+	int x;
+	int y;
+	int z;
+	func gcd(){
+		int f;
+		int g;
+		f = 64;
+		g = 32;
+		while ( f != g ) {				
+			if ( f < g ) {
+				g = g - f;
+			}  
+			else {
+				f = f - g;
+			}  
+		}   
+		z = f;
+	}    
+	call gcd;
+}  

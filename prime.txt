@@ -1,0 +1,15 @@
+main{
+	const maxn = 105;
+	int a;
+	int b;
+	int flag;
+	for( a = 2; a < maxn; a++){
+		flag = 0;
+		for ( b = 1 ; b*b <= a; b++){
+			flag = 1;
+		}
+		if(flag == 1){
+			write (a);
+		}
+	}
+}   

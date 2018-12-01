@@ -1,5 +1,5 @@
 main{
-	func temp{
+	func temp(){
 		int a;
 		a = 0;
 	}   

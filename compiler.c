@@ -550,7 +550,19 @@ void block(int lev, int tx, bool* fsys)
 			}
 			else if (sym == lrange) {
 				getsym();
-				intlistdeclaration(&tx, lev, &dx, num);
+				if (sym == number) {
+					intlistdeclaration(&tx, lev, &dx, num);
+				}
+				else if (sym == ident) {
+					i = position(id, tx);
+					if (i == 0) error(18);
+					if (table[i].kind != constant) error(6);
+					num = table[i].val;
+					intlistdeclaration(&tx, lev, &dx, num);
+				}
+				else {
+					error(6);
+				}
 				if (sym == rrange) {
 					getsym();
 					if (sym == semicolon) {
@@ -807,7 +819,7 @@ void chardeclaration(int* ptx, int lev, int* pdx)
 * int数组声明处理
 */
 void intlistdeclaration(int * ptx, int lev, int * pdx, int length) {
-	if (sym == number) {
+	if (sym == number || sym == ident) {
 		int i = 0;
 		for (i = 0; i < length - 1; ++i) {
 			listenter(integer, ptx, lev, pdx);		/* 填写数组符号表*/
@@ -1162,6 +1174,7 @@ void expression_stat(bool* fsys, int* ptx, int lev)
 }
 
 /* 表达式处理*/
+/* 表达式处理*/
 void expression(bool *fsys, int *ptx, int lev) {
 	int i;
 	enum symbol oldSym;
@@ -1193,118 +1206,128 @@ void expression(bool *fsys, int *ptx, int lev) {
 								error(36);
 							}
 						}
+						else if (sym == ident) {
+							int j = position(id, *ptx);
+							if (j == 0) error(6);
+							if (table[j].kind == constant) shift = num;
+							else if (table[j].kind == integer) {
+								gen(lod, lev - table[j].level, table[j].adr);
+
+							}
+							else {
+								error(9);
+							}
+						}
 						else {
 							error(9);
 						}
 					}
-					if (sym == becomes) { /* = */
-						gen(lod, lev - table[i].level, table[i].adr);
-						getsym();
-						expression(nxtlev, ptx, lev);	/* 处理赋值符号右侧表达式 */
-						if (i != 0) {
-							gen(sto, lev - table[i].level, table[i].adr);	/* expression将执行一系列指令，但最终结果将会保存在栈顶，执行sto命令完成赋值 */
-						}
-					}
-					else if (sym == plus || sym == minus) {
-						oldSym = sym;
-						gen(lod, lev - table[i].level, table[i].adr);
-						getsym();
-						term(nxtlev, ptx, lev);
-						if (oldSym == plus) {
-							gen(opr, 0, 2);
-						}
-						else {
-							gen(opr, 0, 3);
-						}
-					}
-					else if (sym == times || sym == slash) {
-						oldSym = sym;
-						gen(lod, lev - table[i].level, table[i].adr);
-						getsym();
-						factor(nxtlev, ptx, lev);
-						if (oldSym == times) {
-							gen(opr, 0, 4);
-						}
-						else {
-							gen(opr, 0, 5);
-						}
-					}
-					else if (sym == eql) { /* == */
-						gen(lod, lev - table[i].level, table[i].adr);
-						getsym();
-						additive_expr(nxtlev, ptx, lev);
-						gen(opr, 0, 8);
-					}
-					else if (sym == neq) { /* != */
-						gen(lod, lev - table[i].level, table[i].adr);
-						getsym();
-						additive_expr(nxtlev, ptx, lev);
-						gen(opr, 0, 9);
-					}
-					else if (sym == lss) { /* < */
-						gen(lod, lev - table[i].level, table[i].adr);
-						getsym();
-						additive_expr(nxtlev, ptx, lev);
-						gen(opr, 0, 10);
-					}
-					else if (sym == geq) { /* >= */
-						gen(lod, lev - table[i].level, table[i].adr);
-						getsym();
-						additive_expr(nxtlev, ptx, lev);
-						gen(opr, 0, 11);
-					}
-					else if (sym == gtr) { /* > */
-						gen(lod, lev - table[i].level, table[i].adr);
-						getsym();
-						additive_expr(nxtlev, ptx, lev);
-						gen(opr, 0, 12);
-					}
-					else if (sym == leq) { /* <= */
-						gen(lod, lev - table[i].level, table[i].adr);
-						getsym();
-						additive_expr(nxtlev, ptx, lev);
-						gen(opr, 0, 13);
-					}
-					else if (sym == semicolon) { /* ; */
-
-					}
-					else if (sym == selfminus) { /* ++ */
-						gen(lod, lev - table[i].level, table[i].adr);
-						gen(lit, 0, 1);
-						gen(opr, 0, 3);
-						gen(sto, lev - table[i].level, table[i].adr);
-						gen(lod, lev - table[i].level, table[i].adr);
-						getsym();
-					}
-					else if (sym == selfplus) { /* -- */
-						gen(lod, lev - table[i].level, table[i].adr);
-						gen(lit, 0, 1);
-						gen(opr, 0, 2);
-						gen(sto, lev - table[i].level, table[i].adr);
-						gen(lod, lev - table[i].level, table[i].adr);
-						getsym();
-					}
-					else if (sym == mod) {
-						getsym();
-						if (sym == number) {
-							gen(lit, 0, num);
-							gen(opr, 0, 18);
-							getsym();
-						}
-						else {
-							error(32);
-						}
-					}
-					else if (sym == xor) {
-						getsym();
-						additive_expr(nxtlev, ptx, lev);
-						gen(opr, 0, 19);
-					}
-					else {
-						error(6);
-					}
 				}
 			}
+		}
+
+		if (sym == becomes) { /* = */
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+			expression(nxtlev, ptx, lev);	/* 处理赋值符号右侧表达式 */
+			if (i != 0) {
+				gen(sto, lev - table[i].level, table[i].adr);	/* expression将执行一系列指令，但最终结果将会保存在栈顶，执行sto命令完成赋值 */
+			}
+		}
+		else if (sym == plus || sym == minus) {
+			oldSym = sym;
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+			term(nxtlev, ptx, lev);
+			if (oldSym == plus) {
+				gen(opr, 0, 2);
+			}
+			else {
+				gen(opr, 0, 3);
+			}
+		}
+		else if (sym == times || sym == slash) {
+			oldSym = sym;
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+			factor(nxtlev, ptx, lev);
+			if (oldSym == times) {
+				gen(opr, 0, 4);
+			}
+			else {
+				gen(opr, 0, 5);
+			}
+		}
+		else if (sym == eql) { /* == */
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+			additive_expr(nxtlev, ptx, lev);
+			gen(opr, 0, 8);
+		}
+		else if (sym == neq) { /* != */
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+			additive_expr(nxtlev, ptx, lev);
+			gen(opr, 0, 9);
+		}
+		else if (sym == lss) { /* < */
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+			additive_expr(nxtlev, ptx, lev);
+			gen(opr, 0, 10);
+		}
+		else if (sym == geq) { /* >= */
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+			additive_expr(nxtlev, ptx, lev);
+			gen(opr, 0, 11);
+		}
+		else if (sym == gtr) { /* > */
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+			additive_expr(nxtlev, ptx, lev);
+			gen(opr, 0, 12);
+		}
+		else if (sym == leq) { /* <= */
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+			additive_expr(nxtlev, ptx, lev);
+			gen(opr, 0, 13);
+		}
+		else if (sym == semicolon) { /* ; */
+
+		}
+		else if (sym == selfminus) { /* ++ */
+			gen(lod, lev - table[i].level, table[i].adr);
+			gen(lit, 0, 1);
+			gen(opr, 0, 3);
+			gen(sto, lev - table[i].level, table[i].adr);
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+		}
+		else if (sym == selfplus) { /* -- */
+			gen(lod, lev - table[i].level, table[i].adr);
+			gen(lit, 0, 1);
+			gen(opr, 0, 2);
+			gen(sto, lev - table[i].level, table[i].adr);
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+		}
+		else if (sym == mod) {
+			getsym();
+			if (sym == number) {
+				gen(lit, 0, num);
+				gen(opr, 0, 18);
+				getsym();
+			}
+			else {
+				error(32);
+			}
+		}
+		else if (sym == xor) {
+			getsym();
+			additive_expr(nxtlev, ptx, lev);
+			gen(opr, 0, 19);
 		}
 		else if (sym == number) {
 			if (num > amax) {
@@ -1324,11 +1347,9 @@ void expression(bool *fsys, int *ptx, int lev) {
 				error(22);
 			}
 		}
-		else {
-			error(6);
-		}
 	}
 }
+
 
 void simple_expr(bool* fsys, int* ptx, int lev) {
 	enum symbol relop;
@@ -1731,6 +1752,9 @@ void interpret()
 			if (s[t] != 0)
 				p = i.a;
 			t = t - 1;
+			break;
+		case stv:
+			
 			break;
 		}
 	} while (p != 0);
