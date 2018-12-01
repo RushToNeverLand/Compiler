@@ -29,7 +29,7 @@
 #define levmax 1      /* 最大允许过程嵌套声明层数*/
 #define cxmax 200     /* 最多的虚拟机代码数 */
 #define stacksize 200 /* 运行时数据栈元素最多为500个 */
-#define symnum 54
+#define symnum 56
 #define fctnum 10
 
 /* 符号 */
@@ -44,13 +44,14 @@ enum symbol {
 	repeatsym, forsym, mod, untilsym, xor,
 	lbrace, rbrace, lrange, rrange, exitsym,
 	casesym, andsym, boolsym, charsym,
-	intsym, orsym, varsym, funcsym,
+	intsym, orsym, varsym, funcsym, notsym,
 };
 
 /* 符号表中的类型 */
 enum object {
 	constant,
 	variable,
+	boolean,
 	procedure,
 	array,
 	integer,
@@ -122,6 +123,7 @@ int err;        /* 错误计数器 */
 int isChar;
 int isDo;
 int doCX;
+int isBool;
 
 void compile();
 void error(int n);
@@ -147,6 +149,7 @@ void statement(bool* fsys, int* ptx, int lev);
 void listall();
 void intdeclaration(int* ptx, int lev, int* pdx);
 void chardeclaration(int* ptx, int lev, int* pdx);
+void booleclaration(int* ptx, int lev, int* pdx);
 void intlistdeclaration(int * ptx, int lev, int * pdx, int length);
 void charlistdeclaration(int * ptx, int lev, int * pdx, int length);
 void constdeclaration(int* ptx, int lev, int* pdx);

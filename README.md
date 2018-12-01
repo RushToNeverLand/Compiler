@@ -19,7 +19,9 @@
 - [x] Xor operator			  
 - [x] Odd operator     (PL/0 have already solved?)			  
 - [x] ++, --
-- [x] const			        
+- [x] const		
+- [x] bool, and, or & not
+- [ ] multi array		        
 <br>
 
 ## Generative Grammer:<br><br>

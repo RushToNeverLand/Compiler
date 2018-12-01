@@ -1,0 +1,10 @@
+main{
+	bool a;
+	bool b;
+	bool c;
+	a = 1;
+	b = 0;
+	c = a & b;
+	c = a | b;
+	c = ~ a;
+}     

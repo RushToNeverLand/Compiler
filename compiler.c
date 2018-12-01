@@ -308,6 +308,9 @@ void init()
 	ssym[';'] = semicolon;
 	ssym['%'] = mod;
 	ssym['^'] = xor;
+	ssym['&'] = andsym;
+	ssym['|'] = orsym;
+	ssym['~'] = notsym;
 
 	/* 设置保留字名字,按照字母顺序，便于二分查找 */
 	strcpy(&(word[0][0]), "and");
@@ -398,11 +401,13 @@ void init()
 	statbegsys[switchsym] = true;
 	statbegsys[ident] = true;
 	statbegsys[lbrace] = true;
+	statbegsys[notsym] = true;
 
 	/* 设置因子开始符号集 */
 	facbegsys[ident] = true;
 	facbegsys[number] = true;
 	facbegsys[lparen] = true;
+	facbegsys[notsym] = true;
 
 
 	strcpy(errorInfo[0], "声明符号后面缺少标识符");
@@ -441,6 +446,7 @@ void init()
 	strcpy(errorInfo[37], "缺少标识符main");
 	strcpy(errorInfo[38], "缺少标识符until");
 	strcpy(errorInfo[39], "缺少标识符while");
+	strcpy(errorInfo[40], "not bool type");
 
 	err = 0;
 	cc = ll = cx = 0;
@@ -608,6 +614,17 @@ void block(int lev, int tx, bool* fsys)
 			}
 		}
 
+		while (sym == boolsym) {
+			getsym();
+			chardeclaration(&tx, lev, &dx);
+			if (sym == semicolon) {
+				getsym();
+			}
+			else {
+				error(1);				/* 漏掉了分号 */
+			}
+		}
+
 		while (sym == funcsym) {
 			getsym();
 
@@ -714,6 +731,11 @@ void enter(enum object k, int* ptx, int lev, int* pdx)
 		table[(*ptx)].adr = (*pdx);
 		(*pdx)++;
 		break;
+	case boolean:
+		table[(*ptx)].level = lev;
+		table[(*ptx)].adr = (*pdx);
+		(*pdx)++;
+		break;
 	}
 }
 
@@ -725,16 +747,16 @@ void listenter(enum object k, int* ptx, int lev, int* pdx)
 	table[(*ptx)].kind = k;
 	switch (k)
 	{
-	case character:						/* 字符常量*/
-		table[(*ptx)].level = lev;
-		table[(*ptx)].adr = (*pdx);
-		(*pdx)++;
-		break;
-	case integer:						/* 整型变量*/
-		table[(*ptx)].level = lev;
-		table[(*ptx)].adr = (*pdx);
-		(*pdx)++;
-		break;
+		case character:						/* 字符常量*/
+			table[(*ptx)].level = lev;
+			table[(*ptx)].adr = (*pdx);
+			(*pdx)++;
+			break;
+		case integer:						/* 整型变量*/
+			table[(*ptx)].level = lev;
+			table[(*ptx)].adr = (*pdx);
+			(*pdx)++;
+			break;
 	}
 }
 
@@ -754,9 +776,15 @@ int position(char* id, int tx)
 		i--;
 	}
 	if (table[i].kind == character) {
+		isBool = 0;
 		isChar = 1;
 	}
+	else if (table[i].kind == boolean) {
+		isBool = 1;
+		isChar = 0;
+	}
 	else {
+		isBool = 0;
 		isChar = 0;
 	}
 	return i;
@@ -808,6 +836,17 @@ void chardeclaration(int* ptx, int lev, int* pdx)
 {
 	if (sym == ident) {
 		enter(character, ptx, lev, pdx);	// 填写符号表
+		getsym();
+	}
+	else {
+		error(4);	/* var后面应是标识符 */
+	}
+}
+
+void booleclaration(int* ptx, int lev, int* pdx)
+{
+	if (sym == ident) {
+		enter(boolean, ptx, lev, pdx);	// 填写符号表
 		getsym();
 	}
 	else {
@@ -1174,7 +1213,6 @@ void expression_stat(bool* fsys, int* ptx, int lev)
 }
 
 /* 表达式处理*/
-/* 表达式处理*/
 void expression(bool *fsys, int *ptx, int lev) {
 	int i;
 	enum symbol oldSym;
@@ -1194,7 +1232,7 @@ void expression(bool *fsys, int *ptx, int lev) {
 				else {
 					shift = 0;
 					getsym();
-					if (sym == lrange) { /* 判断是否是array中的元素*/
+					if (sym == lrange) {
 						getsym();
 						if (sym == number) {
 							shift = num;
@@ -1312,6 +1350,23 @@ void expression(bool *fsys, int *ptx, int lev) {
 			gen(sto, lev - table[i].level, table[i].adr);
 			gen(lod, lev - table[i].level, table[i].adr);
 			getsym();
+		}
+		else if (sym == andsym) {
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+			additive_expr(nxtlev, ptx, lev);
+			gen(opr, 0, 20);
+		}
+		else if (sym == orsym) {
+			gen(lod, lev - table[i].level, table[i].adr);
+			getsym();
+			additive_expr(nxtlev, ptx, lev);
+			gen(opr, 0, 21);
+		}
+		else if (sym == notsym) {
+			getsym();
+			additive_expr(nxtlev, ptx, lev);
+			gen(opr, 0, 22);
 		}
 		else if (sym == mod) {
 			getsym();
@@ -1509,6 +1564,9 @@ void factor(bool* fsys, int* ptx, int lev)
 							gen(lod, lev - table[i].level, table[i].adr);	/* 找到变量地址并将其值入栈 */
 							break;
 						case character:	/* 标识符为变量 */
+							gen(lod, lev - table[i].level, table[i].adr);	/* 找到变量地址并将其值入栈 */
+							break;
+						case boolean:	/* 标识符为变量 */
 							gen(lod, lev - table[i].level, table[i].adr);	/* 找到变量地址并将其值入栈 */
 							break;
 						case procedure:	/* 标识符为过程 */
@@ -1719,6 +1777,17 @@ void interpret()
 			case 19:/* 异或 */
 				t = t - 1;
 				s[t] = s[t] ^ s[t + 1];
+				break;
+			case 20:/* & */
+				t = t - 1;
+				s[t] = s[t] & s[t - 1];
+				break;
+			case 21:/* | */
+				t = t - 1;
+				s[t] = s[t] | s[t - 1];
+				break;
+			case 22:/* not */
+				s[t] = ~s[t];
 				break;
 			}
 			break;
