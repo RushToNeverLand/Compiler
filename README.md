@@ -17,11 +17,11 @@
 - [x] do...while...	  
 - [x] Mod operator	 
 - [x] Xor operator			  
-- [x] Odd operator     (PL/0 have already solved?)			  
+- [x] Odd operator   		  
 - [x] ++, --
 - [x] const		
 - [x] bool, and, or & not
-- [ ] multi array		        
+- [x] Good UI with Debug
 <br>
 
 ## Generative Grammer:<br><br>
