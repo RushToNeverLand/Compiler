@@ -73,7 +73,7 @@ void getch() {
 		}
 		ll = 0;
 		cc = 0;
-
+		printf("%d ", cx);
 		fprintf(foutput, "%d ", cx);
 		ch = ' ';
 		while (ch != 10) {
@@ -81,6 +81,7 @@ void getch() {
 				line[ll] = 0;
 				break;
 			}
+			printf("%c", ch);
 			fprintf(foutput, "%c", ch);
 			line[ll] = ch;
 			ll++;
@@ -307,7 +308,7 @@ void init()
 	ssym[','] = comma;
 	ssym[';'] = semicolon;
 	ssym['%'] = mod;
-	ssym['^'] = xor;
+	ssym['^'] = xorsym;
 	ssym['&'] = andsym;
 	ssym['|'] = orsym;
 	ssym['~'] = notsym;
@@ -374,6 +375,8 @@ void init()
 	strcpy(&(mnemonic[jmp][0]), "jmp");
 	strcpy(&(mnemonic[jpc][0]), "jpc");
 	strcpy(&(mnemonic[jeq][0]), "jeq");
+	strcpy(&(mnemonic[stv][0]), "stv");
+	strcpy(&(mnemonic[lov][0]), "lov");
 
 	/* 设置符号集 */
 	memset(declbegsys, false, sizeof(declbegsys));
@@ -447,6 +450,7 @@ void init()
 	strcpy(errorInfo[38], "缺少标识符until");
 	strcpy(errorInfo[39], "缺少标识符while");
 	strcpy(errorInfo[40], "not bool type");
+	strcpy(errorInfo[41], "index of array list exceed");
 
 	err = 0;
 	cc = ll = cx = 0;
@@ -515,7 +519,7 @@ void compile()
  */
 void block(int lev, int tx, bool* fsys)
 {
-	int i;
+	int i, oldNum;
 
 	int dx;                 /* 记录数据分配的相对地址 */
 	int tx0;                /* 保留初始tx */
@@ -557,6 +561,7 @@ void block(int lev, int tx, bool* fsys)
 			else if (sym == lrange) {
 				getsym();
 				if (sym == number) {
+					oneSize[tx] = num;
 					intlistdeclaration(&tx, lev, &dx, num);
 				}
 				else if (sym == ident) {
@@ -564,6 +569,7 @@ void block(int lev, int tx, bool* fsys)
 					if (i == 0) error(18);
 					if (table[i].kind != constant) error(6);
 					num = table[i].val;
+					oneSize[tx] = num;
 					intlistdeclaration(&tx, lev, &dx, num);
 				}
 				else {
@@ -581,6 +587,7 @@ void block(int lev, int tx, bool* fsys)
 				else {
 					error(4);			/* 缺少]*/
 				}
+			
 			}
 			else {
 				error(9);				/* 漏掉了分号*/
@@ -595,7 +602,21 @@ void block(int lev, int tx, bool* fsys)
 			}
 			else if (sym == lrange) {
 				getsym();
-				charlistdeclaration(&tx, lev, &dx, num);
+				if (sym == number) {
+					oneSize[tx] = num;
+					charlistdeclaration(&tx, lev, &dx, num);
+				}
+				else if (sym == ident) {
+					i = position(id, tx);
+					if (i == 0) error(18);
+					if (table[i].kind != constant) error(6);
+					num = table[i].val;
+					oneSize[tx] = num;
+					charlistdeclaration(&tx, lev, &dx, num);
+				}
+				else {
+					error(6);
+				}
 				if (sym == rrange) {
 					getsym();
 					if (sym == semicolon) {
@@ -616,7 +637,7 @@ void block(int lev, int tx, bool* fsys)
 
 		while (sym == boolsym) {
 			getsym();
-			chardeclaration(&tx, lev, &dx);
+			booldeclaration(&tx, lev, &dx);
 			if (sym == semicolon) {
 				getsym();
 			}
@@ -843,7 +864,7 @@ void chardeclaration(int* ptx, int lev, int* pdx)
 	}
 }
 
-void booleclaration(int* ptx, int lev, int* pdx)
+void booldeclaration(int* ptx, int lev, int* pdx)
 {
 	if (sym == ident) {
 		enter(boolean, ptx, lev, pdx);	// 填写符号表
@@ -907,57 +928,95 @@ void statement_list(bool *fsys, int *ptx, int lev) {
 		statement(nxtlev, ptx, lev);
 	}
 }
+
 /*
  * 语句处理
  */
 void statement(bool* fsys, int* ptx, int lev)
 {
-	int i, cx1, cx2, oldNum;
+	int i, j, cx1, cx2, oldNum;
 	bool nxtlev[symnum];
 	if (sym == readsym) {
 		getsym();
+
 		if (sym == ident) {
+			isArray = 0;
 			i = position(id, *ptx);
-		}
-		else {
-			i = 0;
-		}
-		if (i == 0) {
-			error(18);
-		}
-		else {
-			getsym();
-			if (sym == semicolon) {
-				gen(opr, 0, 16);
-				gen(sto, lev - table[i].level, table[i].adr);
-				getsym();
+			if (i == 0) {
+				error(6);
 			}
-			else if (sym == lrange) {
-				getsym();
-				if (sym == number) {
-					gen(opr, 0, 16);
-					gen(sto, lev - table[i].level, table[i].adr + num);
+			else {
+				if (table[i].kind != integer && table[i].kind != character) {
+					error(7);
+					i = 0;
+				}
+				else {
+					shift = 0;
 					getsym();
-					if (sym == rrange) {
+					if (sym == lrange) {
+						isArray = 1;
 						getsym();
-						if (sym == semicolon) {
+						if (sym == number) {
+							shift = num;
+							getsym();
+							if (shift > oneSize[i]) error(41);
+						}
+						else if (sym == constant) {
+							j = position(id, *ptx);
+							if (j == 0) error(6);
+							if (table[j].kind != constant) {
+								error(7);
+								j = 0;
+							}
+							shift = table[j].val;
+							getsym();
+							if (shift > oneSize[i]) error(41);
+						}
+						else if (sym == ident) {
+							j = position(id, *ptx);
+							if (j == 0) error(6);
+							if (table[j].kind != integer && table[j].kind != character) {
+								error(7);
+								j = 0;
+							}
+							getsym();
+						}
+
+						if (sym == rrange) {
 							getsym();
 						}
 						else {
-							error(1);				/* 语句最后缺少;*/
+							error(36);
 						}
 					}
 					else {
-						error(36);					/* 访问数组元素缺少]*/
+
 					}
 				}
+			}
+		}
+
+		if (sym == semicolon) {
+			getsym();
+			if (i != 0) {
+				gen(opr, 0, 16);
+				if (isArray) {
+					if (shift != 0) {
+						gen(sto, lev - table[i].level, table[i].adr + shift);
+					}
+					else {
+						gen(lod, lev - table[j].level, table[j].adr);
+						gen(stv, lev - table[i].level, table[i].adr);
+					}
+					isArray = 0;
+				}
 				else {
-					error(9);						/* []内应当表明访问的数字*/
+					gen(sto, lev - table[i].level, table[i].adr);	/* expression将执行一系列指令，但最终结果将会保存在栈顶，执行sto命令完成赋值 */
 				}
 			}
-			else {
-				error(1);							/* 语句最后缺少;*/
-			}
+		}
+		else {
+			error(16);
 		}
 	}
 	else {
@@ -1094,10 +1153,21 @@ void statement(bool* fsys, int* ptx, int lev)
 										else error(22);
 										if (sym == number) {
 											getsym();
+											gen(lit, 0, num);
+											gen(sto, lev - table[i].level, table[i].adr);
+										}
+										else if (sym == ident) {
+											getsym();
+											j = position(id, *ptx);
+											if (j == 0) error(1);
+											if (table[j].kind != integer) {
+												error(7);
+												j = 0;
+											}
+											gen(lod, lev - table[j].level, table[j].adr);
+											gen(sto, lev - table[i].level, table[i].adr);
 										}
 										else error(32);
-										gen(lit, 0, num);
-										gen(sto, lev - table[i].level, table[i].adr);
 
 										if (sym != semicolon) error(1);	/* 少了分号*/
 										else getsym();
@@ -1115,6 +1185,7 @@ void statement(bool* fsys, int* ptx, int lev)
 										gen(opr, 0, 13);
 										cx2 = cx;
 										gen(jpc, 0, 0);
+
 										if (sym == rparen) {
 											getsym();
 										}
@@ -1143,26 +1214,6 @@ void statement(bool* fsys, int* ptx, int lev)
 						else {
 							error(21);
 						}
-					}
-					else if (sym == switchsym) {
-						getsym();
-						if (sym != lparen) error(16);
-						else getsym();
-						if (sym != ident) error(6);
-						i = position(id, *ptx);						
-						if (i == 0) error(6);
-						else getsym();
-						if (sym != rparen) error(17);
-						else getsym();
-						if (sym != lbrace) error(20);
-						else getsym();
-						while (sym == casesym) {
-							getsym();
-							statement_list(nxtlev, ptx, lev);
-
-						}
-						if (sym != rbrace) error(21);
-						else getsym();
 					}
 					else if (sym == repeatsym) {
 						getsym();
@@ -1214,12 +1265,13 @@ void expression_stat(bool* fsys, int* ptx, int lev)
 
 /* 表达式处理*/
 void expression(bool *fsys, int *ptx, int lev) {
-	int i;
+	int i, j;
 	enum symbol oldSym;
 	int oldPosition;
 	bool nxtlev[symnum];
 	if (inset(sym, facbegsys)) {
 		if (sym == ident) {
+			isArray = 0;
 			i = position(id, *ptx);
 			if (i == 0) {
 				error(6);
@@ -1233,43 +1285,69 @@ void expression(bool *fsys, int *ptx, int lev) {
 					shift = 0;
 					getsym();
 					if (sym == lrange) {
+						isArray = 1;
 						getsym();
 						if (sym == number) {
 							shift = num;
+							if (shift > oneSize[i]) error(41);
+							gen(lod, lev - table[i].level, table[i].adr + shift);
 							getsym();
-							if (sym == rrange) {
-								getsym();
+						}
+						else if (sym == constant) {
+							j = position(id, *ptx);
+							if (j == 0) error(6);
+							if (table[j].kind != constant) {
+								error(7);
+								j = 0;
 							}
-							else {
-								error(36);
-							}
+							shift = table[j].val;
+							if (shift > oneSize[i]) error(41);
+							gen(lod, lev - table[i].level, table[i].adr + shift);
+							getsym();
 						}
 						else if (sym == ident) {
-							int j = position(id, *ptx);
+							j = position(id, *ptx);
 							if (j == 0) error(6);
-							if (table[j].kind == constant) shift = num;
-							else if (table[j].kind == integer) {
-								gen(lod, lev - table[j].level, table[j].adr);
-
+							if (table[j].kind != integer && table[j].kind != character) {
+								error(7);
+								j = 0;
 							}
-							else {
-								error(9);
-							}
+							gen(lod, lev - table[j].level, table[j].adr);
+							gen(lov, lev - table[i].level, table[i].adr);
+							getsym();
+						}
+						
+						if (sym == rrange) {
+							getsym();
 						}
 						else {
-							error(9);
+							error(36);
 						}
+					}
+					else {
+						gen(lod, lev - table[i].level, table[i].adr);
 					}
 				}
 			}
 		}
 
 		if (sym == becomes) { /* = */
-			gen(lod, lev - table[i].level, table[i].adr);
 			getsym();
 			expression(nxtlev, ptx, lev);	/* 处理赋值符号右侧表达式 */
 			if (i != 0) {
-				gen(sto, lev - table[i].level, table[i].adr);	/* expression将执行一系列指令，但最终结果将会保存在栈顶，执行sto命令完成赋值 */
+				if (isArray) {
+					if (shift != 0) {
+						gen(sto, lev - table[i].level, table[i].adr + shift);
+					}
+					else {
+						gen(lod, lev - table[j].level, table[j].adr);
+						gen(stv, lev - table[i].level, table[i].adr);
+					}
+					isArray = 0;
+				}
+				else {
+					gen(sto, lev - table[i].level, table[i].adr);	/* expression将执行一系列指令，但最终结果将会保存在栈顶，执行sto命令完成赋值 */
+				}
 			}
 		}
 		else if (sym == plus || sym == minus) {
@@ -1297,37 +1375,31 @@ void expression(bool *fsys, int *ptx, int lev) {
 			}
 		}
 		else if (sym == eql) { /* == */
-			gen(lod, lev - table[i].level, table[i].adr);
 			getsym();
 			additive_expr(nxtlev, ptx, lev);
 			gen(opr, 0, 8);
 		}
 		else if (sym == neq) { /* != */
-			gen(lod, lev - table[i].level, table[i].adr);
 			getsym();
 			additive_expr(nxtlev, ptx, lev);
 			gen(opr, 0, 9);
 		}
 		else if (sym == lss) { /* < */
-			gen(lod, lev - table[i].level, table[i].adr);
 			getsym();
 			additive_expr(nxtlev, ptx, lev);
 			gen(opr, 0, 10);
 		}
 		else if (sym == geq) { /* >= */
-			gen(lod, lev - table[i].level, table[i].adr);
 			getsym();
 			additive_expr(nxtlev, ptx, lev);
 			gen(opr, 0, 11);
 		}
 		else if (sym == gtr) { /* > */
-			gen(lod, lev - table[i].level, table[i].adr);
 			getsym();
 			additive_expr(nxtlev, ptx, lev);
 			gen(opr, 0, 12);
 		}
 		else if (sym == leq) { /* <= */
-			gen(lod, lev - table[i].level, table[i].adr);
 			getsym();
 			additive_expr(nxtlev, ptx, lev);
 			gen(opr, 0, 13);
@@ -1336,7 +1408,6 @@ void expression(bool *fsys, int *ptx, int lev) {
 
 		}
 		else if (sym == selfminus) { /* ++ */
-			gen(lod, lev - table[i].level, table[i].adr);
 			gen(lit, 0, 1);
 			gen(opr, 0, 3);
 			gen(sto, lev - table[i].level, table[i].adr);
@@ -1344,7 +1415,6 @@ void expression(bool *fsys, int *ptx, int lev) {
 			getsym();
 		}
 		else if (sym == selfplus) { /* -- */
-			gen(lod, lev - table[i].level, table[i].adr);
 			gen(lit, 0, 1);
 			gen(opr, 0, 2);
 			gen(sto, lev - table[i].level, table[i].adr);
@@ -1352,13 +1422,11 @@ void expression(bool *fsys, int *ptx, int lev) {
 			getsym();
 		}
 		else if (sym == andsym) {
-			gen(lod, lev - table[i].level, table[i].adr);
 			getsym();
 			additive_expr(nxtlev, ptx, lev);
 			gen(opr, 0, 20);
 		}
 		else if (sym == orsym) {
-			gen(lod, lev - table[i].level, table[i].adr);
 			getsym();
 			additive_expr(nxtlev, ptx, lev);
 			gen(opr, 0, 21);
@@ -1379,7 +1447,7 @@ void expression(bool *fsys, int *ptx, int lev) {
 				error(32);
 			}
 		}
-		else if (sym == xor) {
+		else if (sym == xorsym) {
 			getsym();
 			additive_expr(nxtlev, ptx, lev);
 			gen(opr, 0, 19);
@@ -1401,6 +1469,9 @@ void expression(bool *fsys, int *ptx, int lev) {
 			else {
 				error(22);
 			}
+		}
+		else {
+			
 		}
 	}
 }
@@ -1517,7 +1588,7 @@ void term(bool* fsys, int* ptx, int lev)
  */
 void factor(bool* fsys, int* ptx, int lev)
 {
-	int i;
+	int i, j;
 	bool nxtlev[symnum];
 	//test(facbegsys, fsys, 24);	/* 检测因子的开始符号 */
 	while (inset(sym, facbegsys)) 	/* 循环处理因子 */
@@ -1536,9 +1607,9 @@ void factor(bool* fsys, int* ptx, int lev)
 					getsym();
 					if (sym == number) {
 						shift = num;
+						if (shift > oneSize[i]) error(41);
 						getsym();
 						if (sym == rrange) {
-							getsym();
 							switch (table[i].kind) 
 							{
 								case integer:
@@ -1551,6 +1622,64 @@ void factor(bool* fsys, int* ptx, int lev)
 									error(21);	/* 不能为过程 */
 									break;
 							}
+							getsym();
+						}
+					}
+					else if (sym == ident) {
+						j = position(id, *ptx);
+						if (j == 0) error(6);
+						if (table[j].kind != constant) {
+							error(7);
+							j = 0;
+						}
+						getsym();
+						if (sym == rrange) {
+							switch (table[i].kind) {
+								case integer:
+									gen(lod, lev - table[j].level, table[j].adr);
+									gen(lov, lev - table[i].level, table[i].adr);
+									break;
+								case character:
+									gen(lod, lev - table[j].level, table[j].adr);
+									gen(lov, lev - table[i].level, table[i].adr);
+									break;
+								case boolean:	/* 标识符为变量 */
+									gen(lod, lev - table[j].level, table[j].adr);
+									gen(lov, lev - table[i].level, table[i].adr);	/* 找到变量地址并将其值入栈 */
+									break;
+								case procedure:	/* 标识符为过程 */
+									error(21);	/* 不能为过程 */
+									break;
+							}
+							getsym();
+						}
+					}
+					else if (sym == constant) {
+						j = position(id, *ptx);
+						if (j == 0) error(6);
+						if (table[j].kind != constant) {
+							error(7);
+							j = 0;
+						}
+						shift = table[j].val;
+						if (shift > oneSize[i]) error(41);
+						getsym();
+						if (sym == rrange) {
+							switch (table[i].kind) {
+								case integer:
+									gen(lod, lev - table[i].level, table[i].adr + shift);
+									break;
+								case character:
+									gen(lod, lev - table[i].level, table[i].adr + shift);
+									break;
+								case boolean:	/* 标识符为变量 */
+									gen(lod, lev - table[i].level, table[i].adr);	/* 找到变量地址并将其值入栈 */
+									break;
+								case procedure:	/* 标识符为过程 */
+									error(21);	/* 不能为过程 */
+									break;
+							}
+							getsym();
 						}
 					}
 				}
@@ -1593,9 +1722,7 @@ void factor(bool* fsys, int* ptx, int lev)
 				if (sym == lparen)	/* 因子为表达式 */
 				{
 					getsym();
-					memcpy(nxtlev, fsys, sizeof(bool) * symnum);
-					nxtlev[rparen] = true;
-					additive_expr(nxtlev, ptx, lev);
+					expression(nxtlev, ptx, lev);
 					if (sym == rparen)
 					{
 						getsym();
@@ -1760,8 +1887,8 @@ void interpret()
 				break;
 			case 16:/* 读入一个输入置于栈顶 */
 				t = t + 1;
-				printf("Input:");
-				fprintf(fresult, "Input:");
+				printf("\nInput:");
+				fprintf(fresult, "\nInput:");
 				scanf("%d", &(s[t]));
 				fprintf(fresult, "%d\n", s[t]);
 				break;
@@ -1823,12 +1950,17 @@ void interpret()
 			t = t - 1;
 			break;
 		case stv:
-			
+			s[base(i.l, s, b) + i.a + s[t]] = s[t - 1];
+			t = t - 2;
+			break;
+		case lov:
+			t = t + 1;
+			s[t] = s[base(i.l, s, b) + i.a + s[t - 1]];
 			break;
 		}
 	} while (p != 0);
-	printf("End X0\n");
-	fprintf(fresult, "Execute Successfully\n");
+	printf("\nEnd X0\n");
+	fprintf(fresult, "\nExecute Successfully\n");
 }
 
 /* 通过过程基址求上l层过程的基址 */

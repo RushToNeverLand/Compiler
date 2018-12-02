@@ -28,9 +28,9 @@
 #define amax 2048     /* 地址上界*/
 #define levmax 1      /* 最大允许过程嵌套声明层数*/
 #define cxmax 200     /* 最多的虚拟机代码数 */
-#define stacksize 200 /* 运行时数据栈元素最多为500个 */
+#define stacksize 500 /* 运行时数据栈元素最多为500个 */
 #define symnum 56
-#define fctnum 10
+#define fctnum 11
 
 /* 符号 */
 enum symbol {
@@ -41,7 +41,7 @@ enum symbol {
 	mainsym, continsym, ifsym, breaksym, whilesym,
 	writesym, readsym, dosym, callsym, constsym,
 	elsesym, selfplus, selfminus, continuesym, switchsym,
-	repeatsym, forsym, mod, untilsym, xor,
+	repeatsym, forsym, mod, untilsym, xorsym,
 	lbrace, rbrace, lrange, rrange, exitsym,
 	casesym, andsym, boolsym, charsym,
 	intsym, orsym, varsym, funcsym, notsym,
@@ -63,7 +63,7 @@ enum fct {
 	lit, opr, lod,
 	sto, cal, ini,
 	jmp, jpc, jeq,
-	stv,
+	stv, lov,
 };
 
 /* 虚拟机代码结构 */
@@ -97,6 +97,11 @@ bool facbegsys[symnum];     /* 表示因子开始的符号集合 */
 bool debug;
 char errorInfo[100][100];	/* 保存错误信息*/
 int  shift;					/* 数组偏移量*/
+int oneSize[100];
+int twoSize_1[100];
+int twoSize_2[100];
+int isArray;
+int ax;
 
 /* 符号表结构 */
 struct tablestruct
@@ -108,6 +113,16 @@ struct tablestruct
 	int adr;            /* 地址，仅const不使用 */
 	int size;           /* 需要分配的数据区空间, 仅procedure使用 */
 };
+
+typedef struct {
+	char name[20];
+	int sum;
+	int n;
+	int dim[20];
+	int size[200];
+	int addr;
+}arr;
+arr array_table[200],array_t;
 
 struct tablestruct table[txmax]; /* 符号表 */
 
@@ -149,7 +164,7 @@ void statement(bool* fsys, int* ptx, int lev);
 void listall();
 void intdeclaration(int* ptx, int lev, int* pdx);
 void chardeclaration(int* ptx, int lev, int* pdx);
-void booleclaration(int* ptx, int lev, int* pdx);
+void booldeclaration(int* ptx, int lev, int* pdx);
 void intlistdeclaration(int * ptx, int lev, int * pdx, int length);
 void charlistdeclaration(int * ptx, int lev, int * pdx, int length);
 void constdeclaration(int* ptx, int lev, int* pdx);

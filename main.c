@@ -20,11 +20,12 @@
 
 
 /* 主程序开始 */
-int main()
+int main(int argc, char *argv[])
 {
-	printf("Input pl/0 file?   ");
+	//printf("Input pl/0 file?   ");
 	scanf("%s", fname);					/* 输入目标文件名 */
-
+	//strcpy(fname, argv[1]);
+	
 	if ((fin = fopen(fname, "r")) == NULL)
 	{
 		printf("Can't open the input file!\n");

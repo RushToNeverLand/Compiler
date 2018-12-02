@@ -1,0 +1,18 @@
+main{
+	const maxn = 105;
+	int prime[105];
+	int vis[105];
+	int i;
+	int j;
+	for(i=0;i<maxn;i++){
+		vis[i]=1;
+	}
+	for(i=2;i<maxn;i++){
+		if(vis[i]==1){
+			write i;
+			for(j=i;j<maxn;j=j+i){
+				vis[j]=0;
+			}
+		}
+	}
+}     
