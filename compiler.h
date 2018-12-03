@@ -97,7 +97,6 @@ bool statbegsys[symnum];    /* 表示语句开始的符号集合 */
 bool facbegsys[symnum];     /* 表示因子开始的符号集合 */
 bool debug;
 char errorInfo[100][100];	/* 保存错误信息*/
-int  shift;					/* 数组偏移量*/
 int oneSize[100];
 int twoSize_1[100];
 int twoSize_2[100];

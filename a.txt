@@ -1,5 +1,11 @@
 main{
-	int a;
-	a = 2;
-	a = a%2;
-}  
+	const maxn = 105;
+	int i;
+	int j;
+	int vis[maxn];
+	int prime[maxn];
+	for(i=0;i<maxn;i++){
+		vis[i]=1;
+		write i;
+	}
+}     

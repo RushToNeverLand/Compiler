@@ -938,13 +938,14 @@ void statement_list(bool *fsys, int *ptx, int lev) {
  */
 void statement(bool* fsys, int* ptx, int lev)
 {
-	int i, j, cx1, cx2, oldNum, isArray;
+	int i, j, cx1, cx2, oldNum, isArray, shift;
 	bool nxtlev[symnum];
 	if (sym == readsym) {
 		getsym();
 
 		if (sym == ident) {
 			isArray = 0;
+			shift = -1;
 			i = position(id, *ptx);
 			if (i == 0) {
 				error(6);
@@ -955,7 +956,6 @@ void statement(bool* fsys, int* ptx, int lev)
 					i = 0;
 				}
 				else {
-					shift = 0;
 					getsym();
 					if (sym == lrange) {
 						isArray = 1;
@@ -1141,69 +1141,31 @@ void statement(bool* fsys, int* ptx, int lev)
 						getsym();
 						if (sym == lparen) {
 							getsym();
-							if (sym == ident) {
-								i = position(id, *ptx);
-								if (i == 0) error(6);
-								else {
-									if (table[i].kind != integer) {
-										error(7);
-										i = 0;
-									}
-									else {
-										getsym();
+							expression(nxtlev, ptx, lev);
+							if (sym == semicolon) getsym();
+							else error(22);
 
-										gen(lod, lev - table[i].level, table[i].adr);
-										if (sym == becomes) getsym();
-										else error(22);
-										if (sym == number) {
-											getsym();
-											gen(lit, 0, num);
-											gen(sto, lev - table[i].level, table[i].adr);
-										}
-										else if (sym == ident) {
-											getsym();
-											j = position(id, *ptx);
-											if (j == 0) error(1);
-											if (table[j].kind != integer) {
-												error(7);
-												j = 0;
-											}
-											gen(lod, lev - table[j].level, table[j].adr);
-											gen(sto, lev - table[i].level, table[i].adr);
-										}
-										else error(32);
+							int cx1 = cx;
+							expression(nxtlev, ptx, lev);
+							int cx2 = cx;
+							gen(jpc, 0, 0);
+							int cx3 = cx;
+							gen(jmp, 0, 0);
+							if (sym == semicolon) getsym();
+							else error(22);
+							
+							int cx4 = cx;
+							expression(nxtlev, ptx, lev);
+							gen(jmp, 0, cx1);
+							if (sym == rparen) getsym();
+							else error(17);
 
-										if (sym != semicolon) error(1);	/* 少了分号*/
-										else getsym();
+							int cx5 = cx;
+							statement(nxtlev, ptx, lev);
+							gen(jmp, 0, cx4);
 
-										simple_expr(nxtlev, ptx, lev);
-										oldNum = num + 1;
-										//gen(sto, lev - table[i].level, table[i].adr);
-
-										if (sym != semicolon) error(1);
-										else getsym();
-
-										cx1 = cx;
-										expression(nxtlev, ptx, lev);
-										gen(lit, 0, oldNum);
-										gen(opr, 0, 13);
-										cx2 = cx;
-										gen(jpc, 0, 0);
-
-										if (sym == rparen) {
-											getsym();
-										}
-										else {
-											error(17);
-										}
-
-										statement(nxtlev, ptx, lev);
-
-										gen(jmp, 0, cx1);
-										code[cx2].a = cx;
-									}
-								}
-							}
+							code[cx2].a = cx;
+							code[cx3].a = cx5;
 						}
 						else {
 							error(16);
@@ -1371,7 +1333,7 @@ void expression_stat(bool* fsys, int* ptx, int lev)
 
 /* 表达式处理*/
 void expression(bool *fsys, int *ptx, int lev) {
-	int i, j, isArray;
+	int i, j, isArray, shift;
 	enum symbol oldSym;
 	int oldPosition;
 	bool nxtlev[symnum];
@@ -1392,7 +1354,6 @@ void expression(bool *fsys, int *ptx, int lev) {
 				else {
 					getsym();
 					if (sym == lrange) {
-						shift = 0;
 						isArray = 1;
 						getsym();
 						if (sym == number) {
@@ -1783,7 +1744,7 @@ void term(bool* fsys, int* ptx, int lev)
  */
 void factor(bool* fsys, int* ptx, int lev)
 {
-	int i, j;
+	int i, j, shift;
 	bool nxtlev[symnum];
 	while (inset(sym, facbegsys)) 	/* 循环处理因子 */
 	{
