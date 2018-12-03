@@ -23,7 +23,7 @@
 int main(int argc, char *argv[])
 {
 	//printf("Input pl/0 file?   ");
-	scanf("%s", fname);					/* 输入目标文件名 */
+	scanf("%s", fname);					/* 输入目标文件名xx */
 	//strcpy(fname, argv[1]);
 	
 	if ((fin = fopen(fname, "r")) == NULL)

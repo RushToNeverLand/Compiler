@@ -1,0 +1,12 @@
+main{
+char c;
+int x;
+int y;
+int m;
+x = 20;
+y = 20;
+m=(x*x + y*y) / 2 ;
+c=4;
+write m;
+write c;
+}   

@@ -20,7 +20,7 @@
 #define true 1
 #define false 0
 
-#define norw 24       /* 保留字个数 */
+#define norw 25       /* 保留字个数 */
 #define txmax 512     /* 符号表容量 */
 #define nmax 14       /* 数字的最大位数 */
 #define al 10         /* 标识符的最大长度 */
@@ -29,7 +29,7 @@
 #define levmax 1      /* 最大允许过程嵌套声明层数*/
 #define cxmax 200     /* 最多的虚拟机代码数 */
 #define stacksize 500 /* 运行时数据栈元素最多为500个 */
-#define symnum 56
+#define symnum 57
 #define fctnum 11
 
 /* 符号 */
@@ -45,6 +45,7 @@ enum symbol {
 	lbrace, rbrace, lrange, rrange, exitsym,
 	casesym, andsym, boolsym, charsym,
 	intsym, orsym, varsym, funcsym, notsym,
+	defaultsym,	colonsym,
 };
 
 /* 符号表中的类型 */
@@ -100,7 +101,7 @@ int  shift;					/* 数组偏移量*/
 int oneSize[100];
 int twoSize_1[100];
 int twoSize_2[100];
-int isArray;
+int oldI;
 int ax;
 
 /* 符号表结构 */
