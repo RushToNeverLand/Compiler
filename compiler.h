@@ -28,7 +28,7 @@
 #define amax 2048     /* 地址上界*/
 #define levmax 1      /* 最大允许过程嵌套声明层数*/
 #define cxmax 200     /* 最多的虚拟机代码数 */
-#define stacksize 500 /* 运行时数据栈元素最多为500个 */
+#define stacksize 10000 /* 运行时数据栈元素最多为1000个 */
 #define symnum 57
 #define fctnum 11
 
@@ -98,10 +98,11 @@ bool facbegsys[symnum];     /* 表示因子开始的符号集合 */
 bool debug;
 char errorInfo[100][100];	/* 保存错误信息*/
 int oneSize[100];
-int twoSize_1[100];
-int twoSize_2[100];
 int oldI;
-int ax;
+int isWrite;
+enum symbol conf_sym;
+char oldId[al + 1];
+int conf_i, conf_j, conf_shift, conf_array;
 
 /* 符号表结构 */
 struct tablestruct
@@ -155,7 +156,6 @@ void block(int lev, int tx, bool* fsys);
 void interpret();
 void factor(bool* fsys, int* ptx, int lev);
 void term(bool* fsys, int* ptx, int lev);
-void condition(bool* fsys, int* ptx, int lev);
 void expression(bool* fsys, int* ptx, int lev);
 void expression_stat(bool* fsys, int* ptx, int lev);
 void additive_expr(bool* fsys, int* ptx, int lev);
