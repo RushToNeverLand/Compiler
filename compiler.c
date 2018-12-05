@@ -1478,7 +1478,7 @@ void simple_expr(bool* fsys, int* ptx, int lev) {
 	{
 		/* 逻辑表达式处理 */
 		additive_expr(nxtlev, ptx, lev);
-		if(sym == eql && sym == neq && sym == lss && sym == leq && sym == gtr && sym == geq && sym == mod && sym == xorsym && sym == andsym && sym == orsym && sym == notsym) {
+		if(sym == eql || sym == neq || sym == lss || sym == leq || sym == gtr || sym == geq || sym == mod || sym == xorsym || sym == andsym || sym == orsym || sym == notsym) {
 			relop = sym;
 			getsym();
 			additive_expr(fsys, ptx, lev);
@@ -1594,7 +1594,6 @@ void factor(bool* fsys, int* ptx, int lev)
 	{
 		if (conf_sym != -1) {
 			sym = conf_sym;
-			conf_sym = -1;
 			if (conf_array) {
 				if (conf_shift != -1) {
 					gen(lod, lev - table[conf_i].level, table[conf_i].adr + conf_shift);
@@ -1607,6 +1606,7 @@ void factor(bool* fsys, int* ptx, int lev)
 			else {
 				gen(lod, lev - table[conf_i].level, table[conf_i].adr);
 			}
+			conf_sym = -1;
 			conf_i = 0;
 			conf_j = 0;
 			conf_shift = -1;
