@@ -1481,10 +1481,11 @@ void simple_expr(bool* fsys, int* ptx, int lev) {
 	{
 		/* 逻辑表达式处理 */
 		additive_expr(nxtlev, ptx, lev);
-		if (sym == semicolon) {
+		if (sym == semicolon || sym == rparen) {
 			return ;
 		}
-		if (sym == eql || sym == neq || sym == lss || sym == leq || sym == gtr || sym == geq || sym == mod || sym == xorsym || sym == andsym || sym == orsym || sym == notsym) {
+		if (sym == eql || sym == neq || sym == lss || sym == leq || sym == gtr || sym == geq || sym == mod || sym == xorsym || sym == andsym || sym == orsym || sym == notsym\
+			) {
 			relop = sym;
 			getsym();
 			additive_expr(fsys, ptx, lev);
@@ -1573,12 +1574,15 @@ void term(bool* fsys, int* ptx, int lev)
 	enum symbol mulop;	/* 用于保存乘除法符号 */
 	bool nxtlev[symnum];
 	factor(nxtlev, ptx, lev);	/* 处理因子 */
-	while (sym == times || sym == slash || sym == mod) {
+	while (sym == times || sym == slash || sym == mod || sym == xorsym) {
 		mulop = sym;
 		getsym();
 		factor(nxtlev, ptx, lev);
 		if (mulop == times) {
 			gen(opr, 0, 4);	/* 生成乘法指令 */
+		}
+		else if (mulop == xorsym) {
+			gen(opr, 0, 19);
 		}
 		else if (mulop == slash) {
 			gen(opr, 0, 5);	/* 生成除法指令 */
@@ -1613,23 +1617,28 @@ void factor(bool* fsys, int* ptx, int lev)
 			else {
 				gen(lod, lev - table[conf_i].level, table[conf_i].adr);
 			}
-			if (sym == selfminus || sym == selfplus) {
-				gen(lit, 0, 1);
-				if (sym == selfminus) gen(opr, 0, 3);
-				else gen(opr, 0, 2);
-				if (conf_array) {
-					if (conf_shift != -1) {
-						gen(sto, lev - table[conf_i].level, table[conf_i].adr + conf_shift);
+			if (table[conf_i].kind == integer || table[conf_i].kind == character) {
+				if (sym == selfminus || sym == selfplus) {
+					gen(lit, 0, 1);
+					if (sym == selfminus) gen(opr, 0, 3);
+					else gen(opr, 0, 2);
+					if (conf_array) {
+						if (conf_shift != -1) {
+							gen(sto, lev - table[conf_i].level, table[conf_i].adr + conf_shift);
+						}
+						else {
+							gen(lod, lev - table[conf_j].level, table[conf_j].adr);
+							gen(stv, lev - table[conf_i].level, table[conf_i].adr);
+						}
 					}
 					else {
-						gen(lod, lev - table[conf_j].level, table[conf_j].adr);
-						gen(stv, lev - table[conf_i].level, table[conf_i].adr);
+						gen(sto, lev - table[conf_i].level, table[conf_i].adr);
 					}
+					getsym();
 				}
-				else {
-					gen(sto, lev - table[conf_i].level, table[conf_i].adr);
-				}
-				getsym();
+			}
+			else if (table[conf_i].kind == constant) {
+				gen(lit, 0, table[conf_i].val);
 			}
 			conf_sym = -1;
 			conf_i = 0;
@@ -1686,17 +1695,22 @@ void factor(bool* fsys, int* ptx, int lev)
 						error(36);
 					}
 				}
-				if (isArray) {
-					if (shift > -1) {
-						gen(lod, lev - table[i].level, table[i].adr + shift);
+				if (table[i].kind == integer || table[i].kind == character) {
+					if (isArray) {
+						if (shift > -1) {
+							gen(lod, lev - table[i].level, table[i].adr + shift);
+						}
+						else {
+							gen(lod, lev - table[j].level, table[j].adr);
+							gen(lov, lev - table[i].level, table[i].adr);
+						}
 					}
 					else {
-						gen(lod, lev - table[j].level, table[j].adr);
-						gen(lov, lev - table[i].level, table[i].adr);
+						gen(lod, lev - table[i].level, table[i].adr);
 					}
 				}
 				else {
-					gen(lod, lev - table[i].level, table[i].adr);
+					gen(lit, 0, table[i].val);
 				}
 			}
 			if (minusOrPlus == selfminus || minusOrPlus == selfplus) {
@@ -1738,7 +1752,7 @@ void factor(bool* fsys, int* ptx, int lev)
 				if (sym == lparen)	/* 因子为表达式 */
 				{
 					getsym();
-					additive_expr(nxtlev, ptx, lev);
+					expression(nxtlev, ptx, lev);
 					if (sym == rparen)
 					{
 						getsym();
@@ -1746,18 +1760,6 @@ void factor(bool* fsys, int* ptx, int lev)
 					else
 					{
 						error(22);	/* 缺少右括号 */
-					}
-					term(nxtlev, ptx, lev);
-					while (sym == plus || sym == minus) {
-						enum symbol addop = sym;
-						getsym();
-						term(nxtlev, ptx, lev);	/* 处理项 */
-						if (addop == plus) {
-							gen(opr, 0, 2);	/* 生成加法指令 */
-						}
-						else {
-							gen(opr, 0, 3);	/* 生成减法指令 */
-						}
 					}
 				}
 			}
@@ -1928,7 +1930,7 @@ void interpret()
 			t = t - 2;
 			break;
 		case lov:
-			s[t] = s[base(i.l, s, b) + i.a + s[t - 1]];
+			s[t] = s[base(i.l, s, b) + i.a + s[t]];
 			break;
 		}
 	} while (p != 0);
