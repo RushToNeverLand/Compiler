@@ -103,6 +103,7 @@ int isWrite;
 enum symbol conf_sym;
 char oldId[al + 1];
 int conf_i, conf_j, conf_shift, conf_array;
+int conf_cons;
 
 /* 符号表结构 */
 struct tablestruct

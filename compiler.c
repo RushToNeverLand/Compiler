@@ -459,6 +459,9 @@ void init()
 	strcpy(errorInfo[40], "not bool type");
 	strcpy(errorInfo[41], "index of array list exceed");
 	strcpy(errorInfo[42], "缺少'break'");
+	strcpy(errorInfo[43], "bool赋值错误");
+	strcpy(errorInfo[44], "not后应为bool类型");
+	strcpy(errorInfo[45], "++或--运算符对象只能是var");
 
 	err = 0;
 	cc = ll = cx = 0;
@@ -647,7 +650,6 @@ void block(int lev, int tx, bool* fsys)
 				error(1);				/* 漏掉了分号 */
 			}
 		}
-
 		while (sym == boolsym) {
 			getsym();
 			booldeclaration(&tx, lev, &dx);
@@ -658,7 +660,6 @@ void block(int lev, int tx, bool* fsys)
 				error(1);				/* 漏掉了分号 */
 			}
 		}
-
 		while (sym == funcsym) {
 			getsym();
 
@@ -972,7 +973,9 @@ void statement(bool* fsys, int* ptx, int lev)
 						if (sym == number) {
 							shift = num;
 							getsym();
-							if (shift >= oneSize[i]) error(41);
+							if (shift >= oneSize[i]) {
+								error(41);
+							}
 						}
 						else if (sym == constant) {
 							j = position(id, *ptx);
@@ -983,7 +986,9 @@ void statement(bool* fsys, int* ptx, int lev)
 							}
 							shift = table[j].val;
 							getsym();
-							if (shift >= oneSize[i]) error(41);
+							if (shift >= oneSize[i]) {
+								error(41);
+							}
 						}
 						else if (sym == ident) {
 							j = position(id, *ptx);
@@ -1001,9 +1006,6 @@ void statement(bool* fsys, int* ptx, int lev)
 						else {
 							error(36);
 						}
-					}
-					else {
-
 					}
 				}
 			}
@@ -1036,15 +1038,23 @@ void statement(bool* fsys, int* ptx, int lev)
 			getsym();
 
 			isWrite = 1;
+			isBool = 0;
+			isChar = 0;
 			expression(nxtlev, ptx, lev);
 			isWrite = 0;
 
-			if (!isChar) {
-				gen(opr, 0, 14);
+			if (isChar) {
+				gen(opr, 0, 17);
+				isChar = 0;
+			}
+			else if (isBool) {
+				gen(opr, 0, 23);
+				isBool = 0;
 			}
 			else {
-				gen(opr, 0, 17);
+				gen(opr, 0, 14);
 			}
+
 			gen(opr, 0, 15);
 			if (sym != semicolon) {
 				error(16);
@@ -1363,16 +1373,24 @@ void expression(bool *fsys, int *ptx, int lev) {
 			strcpy(oldId, id);
 			oldI = i;
 			conf_i = i;
+			isChar = 0;
+			isBool = 0;
 			if (i == 0) {
 				error(6);
 			}
 			else {
-				if (table[i].kind != integer && table[i].kind != character) {
+				if (table[i].kind != integer && table[i].kind != character && table[i].kind != boolean) {
 					error(7);
 					i = 0;
 				}
 				else {
 					getsym();
+					if (table[i].kind == character) {
+						isChar = 1;
+					}
+					else if (table[i].kind == boolean) {
+						isBool = 1;
+					}
 					if (sym == lrange) {
 						isArray = 1;
 						conf_array = 1;
@@ -1482,7 +1500,7 @@ void simple_expr(bool* fsys, int* ptx, int lev) {
 		/* 逻辑表达式处理 */
 		additive_expr(nxtlev, ptx, lev);
 		if (sym == semicolon || sym == rparen) {
-			return ;
+			return;
 		}
 		if (sym == eql || sym == neq || sym == lss || sym == leq || sym == gtr || sym == geq || sym == mod || sym == xorsym || sym == andsym || sym == orsym || sym == notsym\
 			) {
@@ -1574,7 +1592,7 @@ void term(bool* fsys, int* ptx, int lev)
 	enum symbol mulop;	/* 用于保存乘除法符号 */
 	bool nxtlev[symnum];
 	factor(nxtlev, ptx, lev);	/* 处理因子 */
-	while (sym == times || sym == slash || sym == mod || sym == xorsym) {
+	while (sym == times || sym == slash) {
 		mulop = sym;
 		getsym();
 		factor(nxtlev, ptx, lev);
@@ -1600,11 +1618,13 @@ void factor(bool* fsys, int* ptx, int lev)
 {
 	int i, j, shift, isArray;
 	enum symbol minusOrPlus = -1;
+	enum symbol isNot;
 	bool nxtlev[symnum];
 	while (inset(sym, facbegsys)) 	/* 循环处理因子 */
 	{
 		if (conf_sym != -1) {
 			sym = conf_sym;
+
 			if (conf_array) {
 				if (conf_shift != -1) {
 					gen(lod, lev - table[conf_i].level, table[conf_i].adr + conf_shift);
@@ -1637,9 +1657,6 @@ void factor(bool* fsys, int* ptx, int lev)
 					getsym();
 				}
 			}
-			else if (table[conf_i].kind == constant) {
-				gen(lit, 0, table[conf_i].val);
-			}
 			conf_sym = -1;
 			conf_i = 0;
 			conf_j = 0;
@@ -1650,10 +1667,39 @@ void factor(bool* fsys, int* ptx, int lev)
 			minusOrPlus = sym;
 			getsym();
 		}
+		if (sym == notsym) {
+			isNot = sym;
+			getsym();
+			if (sym == ident) {
+				i = position(id, *ptx);
+				if (i == 0) {
+					error(11);
+				}
+				if (table[i].kind != boolean) {
+					error(44);
+				}
+				gen(lod, lev - table[i].level, table[i].adr);
+				gen(opr, 0, 22);
+				getsym();
+			}
+		}
 		if (sym == ident)	/* 因子为常量或变量 */
 		{
 			isArray = 0;
 			shift = -1;
+			if (strcmp(id, "true") == 0 || strcmp(id, "True") == 0) {
+				gen(lit, 0, 1);
+				getsym();
+				return;
+			}
+			else if (strcmp(id, "false") == 0 || strcmp(id, "False") == 0) {
+				gen(lit, 0, 0);
+				getsym();
+				return;
+			}
+			else {
+
+			}
 			i = position(id, *ptx);	/* 查找标识符在符号表中的位置 */
 			if (i == 0) {
 				error(11);	/* 标识符未声明 */
@@ -1665,8 +1711,9 @@ void factor(bool* fsys, int* ptx, int lev)
 					getsym();
 					if (sym == number) {
 						shift = num;
-						if (shift >= oneSize[i]) 
+						if (shift >= oneSize[i]) {
 							error(41);
+						}
 					}
 					else if (sym == ident) {
 						j = position(id, *ptx);
@@ -1684,8 +1731,9 @@ void factor(bool* fsys, int* ptx, int lev)
 							j = 0;
 						}
 						shift = table[j].val;
-						if (shift >= oneSize[i]) 
+						if (shift >= oneSize[i]) {
 							error(41);
+						}
 					}
 					getsym();
 					if (sym == rrange) {
@@ -1695,7 +1743,7 @@ void factor(bool* fsys, int* ptx, int lev)
 						error(36);
 					}
 				}
-				if (table[i].kind == integer || table[i].kind == character) {
+				if (table[i].kind == integer || table[i].kind == character || table[i].kind == boolean) {
 					if (isArray) {
 						if (shift > -1) {
 							gen(lod, lev - table[i].level, table[i].adr + shift);
@@ -1709,11 +1757,17 @@ void factor(bool* fsys, int* ptx, int lev)
 						gen(lod, lev - table[i].level, table[i].adr);
 					}
 				}
-				else {
+				else if (table[i].kind == constant) {
 					gen(lit, 0, table[i].val);
+				}
+				else {
+
 				}
 			}
 			if (minusOrPlus == selfminus || minusOrPlus == selfplus) {
+				if (table[i].kind != character && table[i].kind != integer) {
+					error(45);
+				}
 				gen(lit, 0, 1);
 				if (minusOrPlus == selfminus) {
 					gen(opr, 0, 3);
@@ -1845,7 +1899,6 @@ void interpret()
 				break;
 			case 13: /* 次栈顶项是否小于等于栈顶项 */
 				t = t - 1;
-				//printf("%d %d\n", s[t], s[t + 1]);
 				s[t] = (s[t] <= s[t + 1]);
 				break;
 			case 14:/* 栈顶值输出 */
@@ -1886,11 +1939,17 @@ void interpret()
 				s[t] = s[t] | s[t - 1];
 				break;
 			case 22:/* not */
-				s[t] = ~s[t];
+				s[t] = !s[t];
 				break;
 			case 23:/* 栈顶值bool类型输出 */
-				if (s[t] == 1) printf("true");
-				else printf("false");
+				if (s[t] == 1) {
+					printf("true");
+					fprintf(fresult, "true");
+				}
+				else {
+					printf("false");
+					fprintf(fresult, "false");
+				}
 				break;
 			}
 			break;
