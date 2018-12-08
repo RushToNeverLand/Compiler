@@ -1,12 +1,10 @@
 main{
-	int x;
-	int y;
 	int z;
 	func gcd(){
 		int f;
 		int g;
-		f = 64;
-		g = 32;
+		read f;
+		read g;
 		while ( f != g ) {				
 			if ( f < g ) {
 				g = g - f;
@@ -18,4 +16,5 @@ main{
 		z = f;
 	}    
 	call gcd;
+	write z;
 }  

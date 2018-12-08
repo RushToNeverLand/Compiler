@@ -1,7 +1,0 @@
-main{
-	func temp(){
-		int a;
-		a = 0;
-	}   
-	call temp;
-}   
