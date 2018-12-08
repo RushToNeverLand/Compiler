@@ -1,0 +1,22 @@
+main{
+	int z;
+	func lcm(){
+		int f;
+		int g;
+		int sum;
+		read f;
+		read g;
+		sum = f * g;
+		while ( f != g ) {				
+			if ( f < g ) {
+				g = g - f;
+			}  
+			else {
+				f = f - g;
+			}  
+		}   
+		z = sum / f;
+	}   
+	call lcm;
+	write z;
+}  
