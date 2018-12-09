@@ -1,6 +1,10 @@
 main{
 	int a;
 	int b;
+	int c;
 	a = 2;
 	b = a^2;
+	c = a^1;
+	write b;
+	write c;
 }  

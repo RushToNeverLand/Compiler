@@ -1432,7 +1432,7 @@ void expression(bool *fsys, int *ptx, int lev) {
 					}
 					if (sym == becomes) { /* = */
 						getsym();
-						additive_expr(nxtlev, ptx, lev);	/* 处理赋值符号右侧表达式 */
+						simple_expr(nxtlev, ptx, lev);	/* 处理赋值符号右侧表达式 */
 						if (i != 0) {
 							if (isArray) {
 								if (shift != -1) {
@@ -1502,8 +1502,7 @@ void simple_expr(bool* fsys, int* ptx, int lev) {
 		if (sym == semicolon || sym == rparen) {
 			return;
 		}
-		if (sym == eql || sym == neq || sym == lss || sym == leq || sym == gtr || sym == geq || sym == mod || sym == xorsym || sym == andsym || sym == orsym || sym == notsym\
-			) {
+		if (sym == eql || sym == neq || sym == lss || sym == leq || sym == gtr || sym == geq || sym == mod || sym == xorsym || sym == andsym || sym == orsym || sym == notsym) {
 			relop = sym;
 			getsym();
 			additive_expr(fsys, ptx, lev);
