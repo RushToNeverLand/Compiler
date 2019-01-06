@@ -1,5 +1,5 @@
 # This is a X0-compiler based on PL/0 <br><br>
-
+X0-compiler is a mini-C compiler.<br>
 ## CheckList<br><br>
 - [x] Integer 		
 - [x] Character 			    
